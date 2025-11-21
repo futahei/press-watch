@@ -23,3 +23,25 @@ export interface NewArticleCandidate {
   title: string;
   publishedAt?: string;
 }
+
+/**
+ * フロントエンドに返す記事のサマリ情報。
+ * ArticleCard コンポーネントがそのまま表示に使える形にする。
+ */
+export interface ArticleSummary {
+  id: string;
+  companyName: string;
+  title: string;
+  url: string;
+  publishedAt?: string;
+  summaryText?: string;
+  isNew?: boolean;
+}
+
+/**
+ * グループ単位で記事一覧を返すレスポンス。
+ */
+export interface GetGroupArticlesResponse {
+  groupId: string;
+  articles: ArticleSummary[];
+}
