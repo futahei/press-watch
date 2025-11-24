@@ -64,34 +64,58 @@ export async function fetchGroupArticles(
 ): Promise<GetGroupArticlesResponse> {
   const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
 
-  // AWS 側の API がまだ用意されていない間は、モックを使う
+  // API のベースURLが未設定なら、モックを返す
   if (!baseUrl) {
+    console.info(
+      "[fetchGroupArticles] NEXT_PUBLIC_API_BASE_URL が未設定のため、モックデータを返します。groupId=",
+      groupId
+    );
     return getMockGroupArticles(groupId);
   }
 
-  // 将来的な本番/ステージング接続用のコード（まだ実際には叩かれない想定）
   const url = new URL(
     `/groups/${encodeURIComponent(groupId)}/articles`,
     baseUrl
   );
 
-  const res = await fetch(url.toString(), {
-    method: "GET",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    // Next.js のサーバーコンポーネントから呼ぶことを想定しているので、
-    // キャッシュ戦略などは必要に応じて後で調整
-    cache: "no-store",
-  });
+  try {
+    const res = await fetch(url.toString(), {
+      method: "GET",
+      headers: {
+        Accept: "application/json",
+      },
+      // 必要なら credentials や Authorization も後で追加
+    });
 
-  if (!res.ok) {
-    // エラーハンドリングの方針は後で細かく決める
-    throw new Error(`Failed to fetch articles for group: ${groupId}`);
+    if (!res.ok) {
+      console.error(
+        "[fetchGroupArticles] API error:",
+        res.status,
+        res.statusText
+      );
+      // フロントが完全に死なないように、モックにフォールバック
+      return getMockGroupArticles(groupId);
+    }
+
+    const data = (await res.json()) as GetGroupArticlesResponse;
+
+    // 最低限のバリデーション（articles が配列かどうか）
+    if (!Array.isArray(data.articles)) {
+      console.error(
+        "[fetchGroupArticles] Unexpected response shape, falling back to mock:",
+        data
+      );
+      return getMockGroupArticles(groupId);
+    }
+
+    return data;
+  } catch (error) {
+    console.error(
+      "[fetchGroupArticles] Fetch failed, falling back to mock:",
+      error
+    );
+    return getMockGroupArticles(groupId);
   }
-
-  const data = (await res.json()) as GetGroupArticlesResponse;
-  return data;
 }
 
 export async function subscribePush(
@@ -99,7 +123,6 @@ export async function subscribePush(
 ): Promise<PushSubscribeResponse | null> {
   const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
 
-  // まだバックエンド API を用意していない or 開発中の場合は何もしない
   if (!baseUrl) {
     console.info(
       "[subscribePush] NEXT_PUBLIC_API_BASE_URL が未設定のため、購読情報はサーバーには送信しません。",

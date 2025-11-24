@@ -1,221 +1,193 @@
 # PressWatch
 
-**PressWatch** は、企業のプレスリリースを自動で監視し、
-**AI による要約** と **専門用語の簡易解説** を提供する Web サービスです。
+企業のプレスリリースを自動監視し、AI 要約・専門用語解説・通知まで行う Web サービスです。
+RSS 非対応の企業サイトも対象にでき、複数企業を「グループ」としてまとめることで効率よく追跡できます。
 
-特に、**RSS 配信に対応していない企業サイト**を対象とし、
-新しい記事が公開されるたびに自動検知して Web Push 通知を送ります。
+## 📚 機能概要
 
-## 🚀 特徴
+- **プレスリリース自動監視（最大 半日に 1 回）**
+- **AI 要約表示**
+- **専門用語の自動解説**
+- **企業のグループ管理**
+- **ブラウザ Push 通知（Web Push / VAPID 使用）**
+- **ライト / ダークテーマ切り替え（デフォルト system）**
+- 管理者のみアクセス可能な設定ページ（パスワード + Cookie）
 
-### ✓ プレスリリースの自動監視
+## 🏗️ 技術スタック
 
-- 複数企業のプレスリリースページを定期チェック（最大 12 時間に 1 回）
-- RSS 非対応サイトでも対応可能
-- 新規記事のみを抽出して記録
+### フロントエンド（Next.js 16 + React）
 
-### ✓ グループ機能
-
-- 企業を任意のグループに分類  
-  （例：製造業グループ、金融系グループ など）
-- グループ別に新着記事を一覧表示
-
-### ✓ AI による要約生成
-
-- 長文のプレスリリースをコンパクトに要約
-- ワンクリックで内容を把握できる
-
-### ✓ 専門用語の自動抽出 & 解説
-
-- 技術用語や業界用語を検出
-- わかりやすい日本語で解説を表示
-
-### ✓ ブラウザを閉じていても届く Web Push 通知
-
-- Service Worker + VAPID による **本格 Web Push 対応**
-- 新着記事をリアルタイムにお知らせ
-
-### ✓ モダンで親しみやすい UI
-
-- Next.js 製のシンプル・軽量な UI
-- **ライト／ダークモード切替**（システム設定にも追従）
-
-### ✓ 管理者限定の設定ページ
-
-- サイト閲覧はログイン不要
-- `/settings` や環境設定画面だけ管理者パスワード＋ Cookie で保護
-
-## 🏗 アーキテクチャ概要
-
-```txt
-    +------------------------------+
-    |        PressWatch UI         |
-    |  Next.js / S3 / CloudFront   |
-    +---------------+--------------+
-                    |
-                    v
-    +------------------------------+
-    |        API Gateway (REST)    |
-    +---------------+--------------+
-                    |
-                    v
-    +------------------------------+
-    |        AWS Lambda (TS)       |
-    |  - API Handlers              |
-    |  - Crawler (Scheduled)       |
-    |  - Web Push Sender           |
-    +---------------+--------------+
-                    |
-                    v
-    +------------------------------+
-    |          DynamoDB            |
-    |  - Articles                  |
-    |  - Summaries                 |
-    |  - TermExplanations          |
-    |  - Groups / Companies        |
-    |  - WebPushSubscriptions      |
-    +------------------------------+
-
-    +------------------------------+
-    |        Service Worker        |
-    |   (Web Push Subscription)    |
-    +------------------------------+
-
-```
-
-## 🧰 技術スタック
-
-### フロントエンド
-
-- Next.js（App Router）
+- Next.js App Router
 - TypeScript
-- pnpm
-- React
-- Tailwind CSS（予定）
-- Service Worker / Web Push API
+- Tailwind CSS
+- Shadcn/UI
+- Vitest + React Testing Library
+- API 連携（フロント側で API Gateway を呼ぶ構成）
 
 ### バックエンド
 
-- AWS Lambda（TypeScript）
-- API Gateway
+- TypeScript（Node.js 20）
+- AWS Lambda（NodejsFunction + esbuild）
 - DynamoDB
-- EventBridge（定期実行）
-- pnpm
-- Vitest（ユニットテスト）
-- ESLint / Prettier
 
-### CI/CD
+### インフラ（AWS CDK v2）
 
-- GitHub Actions
-  - PR：lint / format / typecheck / unit test の実行（必須チェック）
-  - main ブランチ push：自動デプロイ（S3/CF + Lambda）
+- DynamoDB（PAY_PER_REQUEST）
+- Lambda
+- API Gateway HTTP API（CORS 対応）
+- S3（フロントホスティング予定）
+- CloudFront（CDN 配信予定）
 
-## 📂 ディレクトリ構成（予定）
+## 📂 リポジトリ構成
 
 ```txt
-presswatch/
-  frontend/ # Next.js フロント
-    app/
-      groups/[groupId]/page.tsx
-      articles/[articleId]/page.tsx
-    src/
-      components/
-      lib/
-      tests/
-    package.json
-
-  backend/ # Lambda バックエンド（TS）
-    src/
-      domain/
-        models.ts
-        articleLogic.ts
-      handlers/
-        getGroup.ts
-        getGroupArticles.ts
-        getArticleDetail.ts
-        adminLogin.ts
-        pushSubscribe.ts
-      crawler/
-        crawlAllCompanies.ts
-      tests/
-        domain/
-          articleLogic.test.ts
-    package.json
-
-  .github/
-    workflows/
-      ci.yml
-
-  README.md
+press-watch/
+├── frontend/   # Next.js フロントエンド
+├── backend/    # Lambda ロジック（TS）
+└── infra/
+    └── cdk/    # AWS CDK (DynamoDB / Lambda / API Gateway)
 ```
 
-## 🛠 ローカル開発
+## 🔧 セットアップ
 
-### 1. リポジトリをクローン
+### 1. 依存インストール
 
 ```bash
-git clone https://github.com/<YOUR-USER>/presswatch.git
-cd presswatch
+pnpm install
 ```
 
-### 2. 依存関係インストール（pnpm）
-
-フロント：
+### 2. フロントローカル起動
 
 ```bash
 cd frontend
-pnpm install
+pnpm dev
 ```
 
-バックエンド：
+⚠️ `NEXT_PUBLIC_API_BASE_URL` が未設定の場合、
+フロントは **モックデータ（ローカルのダミー記事）で動作**します。
+
+## 🧪 テスト
+
+#### フロント
 
 ```bash
-cd backend
-pnpm install
-```
-
-### 3. テスト実行
-
-```bash
+cd frontend
 pnpm test
 ```
 
-### Lint / フォーマットチェック
+#### バックエンド
 
 ```bash
-pnpm lint
-pnpm format
+cd backend
+pnpm test
 ```
 
-## 🔮 開発ロードマップ
+## ☁️ インフラ構成（CDK）
 
-- [ ] Next.js フロントの初期実装
-- [ ] ライト／ダークモード切替コンポーネント
-- [ ] 管理者ログイン（パスワード＋ Cookie）
-- [ ] グループ・企業の設定画面
-- [ ] AI 要約機能の実装
-- [ ] 用語抽出＆解説生成
-- [ ] Web Push 購読登録 API
-- [ ] クローラ（12h 間隔）
-- [ ] AWS デプロイ設定（S3/CloudFront + Lambda）
+### 1. DynamoDB
 
-## 📄 ライセンス
+#### 📌 PressWatchArticles
 
-MIT License © 2024 PressWatch Developers
+| 属性名 | 型     | 備考                                     |
+| ------ | ------ | ---------------------------------------- |
+| pk     | string | `GROUP#<groupId>`                        |
+| sk     | string | `PUBLISHED#<ISODate>#URL#<urlHash>`      |
+| その他 | Map    | `title`, `companyName`, `summaryText` 等 |
 
-## 🙌 コントリビューション
+用途：グループごとの記事一覧取得（Query）
 
-PressWatch は 仕様駆動開発 に基づいて進めています。
-Pull Request を行う場合は、事前に仕様変更・追加の意図が分かる形でお願いします。
+#### 📌 PressWatchPushSubscriptions
 
-PR は以下のチェックを通過する必要があります：
+| 属性名    | 型     | 備考                 |
+| --------- | ------ | -------------------- |
+| id        | string | `sub_xxxx` (UUID)    |
+| endpoint  | string | Web Push endpoint    |
+| keys.\*   | string | p256dh / auth        |
+| groupIds  | list   | 購読しているグループ |
+| userAgent | string | 任意                 |
 
-- lint
-- format check
-- typecheck
-- unit tests
+用途：Web Push 通知
 
-## 📬 お問い合わせ
+### 2. Lambda 関数
 
-改善点・アイデアなどあれば Issue を立ててください。
-ようこそ PressWatch へ！
+| Lambda 名                | 説明                                     |
+| ------------------------ | ---------------------------------------- |
+| GetGroupArticlesFunction | 記事一覧取得 (GET /groups/{id}/articles) |
+| PushSubscribeFunction    | Push 購読登録 (POST /push/subscribe)     |
+
+### 3. API Gateway HTTP API
+
+| メソッド | パス                         | Lambda                   |
+| -------- | ---------------------------- | ------------------------ |
+| GET      | `/groups/{groupId}/articles` | GetGroupArticlesFunction |
+| POST     | `/push/subscribe`            | PushSubscribeFunction    |
+
+CORS 設定済み：Next.js のローカル/本番から利用可。
+
+CDK 出力例：
+
+```txt
+Outputs:
+  ApiEndpoint = https://xxxxxx.execute-api.ap-northeast-1.amazonaws.com
+```
+
+## 🔌 フロントと API の接続方法
+
+フロント側の API は基本的に：
+
+```env
+NEXT_PUBLIC_API_BASE_URL/groups/{groupId}/articles
+NEXT_PUBLIC_API_BASE_URL/push/subscribe
+```
+
+を呼びます。
+
+### `.env.local` を作成
+
+```bash
+cd frontend
+touch .env.local
+```
+
+内容：
+
+```env
+NEXT_PUBLIC_API_BASE_URL=
+```
+
+- 未設定の間は **フロントはモックデータで動作**します
+- CDK デプロイ後に **ApiEndpoint** をここに入れると、自動で実 API に切り替わります
+
+例：
+
+```env
+NEXT_PUBLIC_API_BASE_URL=https://abcd1234.execute-api.ap-northeast-1.amazonaws.com
+```
+
+## 🧪 開発フェーズでの動作（モックフォールバック）
+
+フロント側 API クライアント (`src/lib/apiClient.ts`) の仕様：
+
+- API URL 未設定 → **モックデータ返却**
+- API 呼び出し失敗 → **モックデータにフォールバック**
+- API 正常 → **リアル記事一覧を返却**
+
+これにより、AWS へデプロイしなくても開発が進められます。
+
+## 🚀 デプロイ
+
+（今後実装予定）
+
+- フロント：S3 + CloudFront
+- バックエンド：API Gateway + Lambda
+- CI/CD：GitHub Actions（lint・test・cdk deploy）
+
+## 🔮 今後のロードマップ
+
+- 本物のクローラ導入（Node.js + Playwright? / Cheerio?）
+- AI 要約生成（OpenAI API）
+- 専門用語解説（LLM）
+- 通知送信バッチ（EventBridge + Lambda）
+- 管理設定ページ（管理者パスワード + Cookie 認証）
+- 記事詳細ページ
+- サービスワーカーでの Web Push サポート
