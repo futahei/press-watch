@@ -20,3 +20,20 @@ export interface GetGroupArticlesResponse {
   groupId: string;
   articles: ArticleSummary[];
 }
+
+export interface PushSubscribeRequest {
+  subscription: {
+    endpoint: string;
+    keys: {
+      p256dh: string;
+      auth: string;
+    };
+  };
+  groupIds: string[];
+  userAgent?: string;
+}
+
+export interface PushSubscribeResponse {
+  subscriptionId: string;
+  groupIds: string[];
+}
