@@ -120,3 +120,104 @@ export interface PushUnsubscribeRequest {
 export interface PushUnsubscribeResponse {
   success: boolean;
 }
+
+// 識別子（ID）の型
+export type CompanyId = string;
+export type GroupId = string;
+
+/**
+ * 企業ごとのプレスリリース監視設定。
+ * - pressReleaseUrl: 監視対象の一覧ページ
+ * - crawlConfig: HTML からリリース一覧を抽出するための設定
+ */
+export interface CompanyConfig {
+  id: CompanyId;
+  name: string;
+  /**
+   * 企業公式サイト or コーポレートサイトのURL（任意）。
+   */
+  homepageUrl?: string;
+  /**
+   * プレスリリース一覧ページのURL。
+   */
+  pressReleaseUrl: string;
+
+  /**
+   * HTML のどの部分から情報を取るかの設定。
+   * 将来的に複数の type（simpleList / rssProxy / api など）を増やせるように union にしておく。
+   */
+  crawlConfig: SimpleListCrawlConfig;
+}
+
+/**
+ * シンプルな「一覧ページから CSS セレクタで抜く」タイプのクローリング設定。
+ */
+export interface SimpleListCrawlConfig {
+  type: "simpleList";
+  /**
+   * 1件のリリースを表す要素の CSS セレクタ。
+   * 例: "ul.press-list > li"
+   */
+  itemSelector: string;
+
+  /**
+   * タイトルを抜き出すための CSS セレクタ（item 要素からの相対パス）。
+   * 例: "a.title"
+   */
+  titleSelector: string;
+
+  /**
+   * 詳細ページURLを抜き出すための CSS セレクタ（通常は <a>）。
+   * 例: "a.title"
+   */
+  urlSelector: string;
+
+  /**
+   * 公開日を抜き出すための CSS セレクタ（任意）。
+   * 例: "time" / ".date" / "span.pubdate"
+   */
+  dateSelector?: string;
+
+  /**
+   * 日付文字列のパースフォーマット（任意）。
+   * 例: "YYYY/MM/DD" / "YYYY-MM-DD" など。
+   * パースライブラリは後で決める。
+   */
+  dateFormatHint?: string;
+
+  /**
+   * タイムゾーン（IANA 文字列）。例: "Asia/Tokyo"
+   * 未指定なら "UTC" 扱い。
+   */
+  timezone?: string;
+
+  /**
+   * 一覧ページから最大何件まで取得するか。デフォルトは 50 件程度を想定。
+   */
+  maxItems?: number;
+}
+
+/**
+ * グループ設定。
+ * - groupId ごとに「どの企業IDを束ねるか」を管理する。
+ */
+export interface GroupConfig {
+  id: GroupId;
+  name: string;
+  description?: string;
+  companyIds: CompanyId[];
+}
+
+/**
+ * あるグループの全企業をクロールした結果の集約。
+ */
+export interface GroupCrawlSnapshot {
+  group: GroupConfig;
+  /**
+   * companyId ごとのスナップショット。
+   */
+  companySnapshots: Array<{
+    company: CompanyConfig;
+    articles: CrawledArticleSnapshot[];
+  }>;
+}
