@@ -1,57 +1,71 @@
-import type { Metadata } from "next";
-import { ArticleCard } from "@/components/ArticleCard";
 import { fetchGroupArticles } from "@/lib/apiClient";
+import type { ArticleSummary } from "@/lib/types";
+import Link from "next/link";
 
-// Next 16 (Dynamic APIs as Promise) 仕様に合わせる
-interface GroupPageProps {
-  params: Promise<{ groupId: string }>;
-}
+type PageProps = {
+  params: Promise<{
+    groupId: string;
+  }>;
+};
 
-export async function generateMetadata(
-  props: GroupPageProps
-): Promise<Metadata> {
-  const { groupId } = await props.params;
+export default async function GroupPage({ params }: PageProps) {
+  // ★ App Router の params は Promise の可能性があるので await する
+  const { groupId } = await params;
 
-  return {
-    title: `グループ: ${groupId} - PressWatch`,
-  };
-}
-
-export default async function GroupPage(props: GroupPageProps) {
-  const { groupId } = await props.params;
-
-  // API クライアント経由でデータを取得（現時点ではモックが返る）
   const { articles } = await fetchGroupArticles(groupId);
 
   return (
-    <section className="space-y-4">
-      <header className="space-y-1">
-        <h1 className="text-xl font-semibold">グループ: {groupId}</h1>
+    <main className="max-w-5xl mx-auto px-4 py-8 space-y-6">
+      <header className="space-y-2">
+        <h1 className="text-2xl font-bold">
+          グループ「{groupId}」のプレスリリース
+        </h1>
         <p className="text-sm text-slate-600 dark:text-slate-300">
-          このグループに属する企業の最新プレスリリースを表示します。
-          （現在はモックデータを使用しています）
+          監視対象の企業から取得したプレスリリース一覧です。タイトルをクリックすると詳細を表示します。
         </p>
       </header>
 
       {articles.length === 0 ? (
-        <p className="text-sm text-slate-500 dark:text-slate-400">
-          このグループには、まだ表示できるプレスリリースがありません。
+        <p className="text-sm text-slate-600 dark:text-slate-300">
+          現時点でこのグループに表示できる記事はありません。
         </p>
       ) : (
-        <div className="space-y-3">
-          {articles.map((article) => (
-            <ArticleCard
-              key={article.id}
-              companyName={article.companyName}
-              title={article.title}
-              url={article.url}
-              publishedAt={article.publishedAt}
-              summaryText={article.summaryText}
-              isNew={article.isNew}
-            />
+        <ul className="space-y-3">
+          {articles.map((article: ArticleSummary) => (
+            <li key={article.id}>
+              <Link
+                href={`/groups/${encodeURIComponent(
+                  groupId
+                )}/articles/${encodeURIComponent(article.id)}`}
+                className="block rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 hover:border-sky-400 hover:shadow-sm transition-colors"
+              >
+                <div className="flex flex-col gap-1">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-xs font-medium text-sky-600 dark:text-sky-400">
+                      {article.companyName}
+                    </span>
+                    {article.publishedAt && (
+                      <span className="text-[10px] text-slate-500 dark:text-slate-400">
+                        {new Date(article.publishedAt).toLocaleString("ja-JP", {
+                          timeZone: "Asia/Tokyo",
+                        })}
+                      </span>
+                    )}
+                  </div>
+                  <h2 className="text-sm font-semibold line-clamp-2">
+                    {article.title}
+                  </h2>
+                  {article.summaryText && (
+                    <p className="mt-1 text-xs text-slate-600 dark:text-slate-300 line-clamp-2">
+                      {article.summaryText}
+                    </p>
+                  )}
+                </div>
+              </Link>
+            </li>
           ))}
-        </div>
+        </ul>
       )}
-    </section>
+    </main>
   );
 }
