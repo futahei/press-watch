@@ -73,7 +73,7 @@ export class PressWatchStack extends cdk.Stack {
         entry: path.join(backendLambdaEntryDir, "getGroupArticlesHandler.ts"),
         handler: "handler",
         bundling: {
-          externalModules: ["aws-sdk"],
+          // aws-sdk も含めてバンドルする
           minify: true,
           sourceMap: true,
           forceDockerBundling: false,
@@ -93,7 +93,6 @@ export class PressWatchStack extends cdk.Stack {
       entry: path.join(backendLambdaEntryDir, "pushSubscribeHandler.ts"),
       handler: "handler",
       bundling: {
-        externalModules: ["aws-sdk"],
         minify: true,
         sourceMap: true,
         forceDockerBundling: false,
@@ -112,7 +111,6 @@ export class PressWatchStack extends cdk.Stack {
       entry: path.join(backendLambdaEntryDir, "crawlerHandler.ts"),
       handler: "handler",
       bundling: {
-        externalModules: ["aws-sdk"],
         minify: true,
         sourceMap: true,
         forceDockerBundling: false,
