@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { ThemeToggle } from "./ThemeToggle";
+import { NotificationToggle } from "./NotificationToggle";
 
 export function Header() {
   return (
@@ -17,10 +18,8 @@ export function Header() {
         </Link>
 
         <nav className="flex items-center gap-3">
-          {/* 将来的に: グループ一覧や設定ページへのリンク */}
-          {/* <Link href="/groups/default" className="text-sm text-gray-600 dark:text-gray-300">
-            グループ
-          </Link> */}
+          {/* 将来: グループ一覧や設定へのナビゲーション */}
+          <NotificationToggle />
           <ThemeToggle />
         </nav>
       </div>

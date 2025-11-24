@@ -1,4 +1,9 @@
-import type { ArticleSummary, GetGroupArticlesResponse } from "./types";
+import type {
+  ArticleSummary,
+  GetGroupArticlesResponse,
+  PushSubscribeRequest,
+  PushSubscribeResponse,
+} from "./types";
 
 /**
  * 将来的には AWS API Gateway 経由のエンドポイントになる想定。
@@ -86,5 +91,39 @@ export async function fetchGroupArticles(
   }
 
   const data = (await res.json()) as GetGroupArticlesResponse;
+  return data;
+}
+
+export async function subscribePush(
+  payload: PushSubscribeRequest
+): Promise<PushSubscribeResponse | null> {
+  const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
+
+  // まだバックエンド API を用意していない or 開発中の場合は何もしない
+  if (!baseUrl) {
+    console.info(
+      "[subscribePush] NEXT_PUBLIC_API_BASE_URL が未設定のため、購読情報はサーバーには送信しません。",
+      payload
+    );
+    return null;
+  }
+
+  const url = new URL("/push/subscribe", baseUrl);
+
+  const res = await fetch(url.toString(), {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload),
+  });
+
+  if (!res.ok) {
+    throw new Error(
+      `Failed to subscribe push: ${res.status} ${res.statusText}`
+    );
+  }
+
+  const data = (await res.json()) as PushSubscribeResponse;
   return data;
 }
