@@ -1,6 +1,7 @@
 import { fetchGroupArticles } from "@/lib/apiClient";
 import type { ArticleSummary } from "@/lib/types";
 import Link from "next/link";
+import { NotificationToggle } from "@/components/NotificationToggle";
 
 type PageProps = {
   params: Promise<{
@@ -9,7 +10,7 @@ type PageProps = {
 };
 
 export default async function GroupPage({ params }: PageProps) {
-  // ★ App Router の params は Promise の可能性があるので await する
+  // App Router の params は Promise の可能性があるので await する
   const { groupId } = await params;
 
   const { articles } = await fetchGroupArticles(groupId);
@@ -23,6 +24,7 @@ export default async function GroupPage({ params }: PageProps) {
         <p className="text-sm text-slate-600 dark:text-slate-300">
           監視対象の企業から取得したプレスリリース一覧です。タイトルをクリックすると詳細を表示します。
         </p>
+        <NotificationToggle groupId={groupId} />
       </header>
 
       {articles.length === 0 ? (
