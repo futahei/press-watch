@@ -63,9 +63,8 @@ jobs:
       - name: Install dependencies
         run: pnpm install
 
-      # npm scripts 経由ではなく、Next CLI を直接叩く
       - name: Lint (frontend)
-        run: pnpm exec next lint
+        run: pnpm lint
 
       - name: Test (frontend)
         run: pnpm test
@@ -94,6 +93,5 @@ jobs:
       - name: Install dependencies
         run: pnpm install
 
-      # ローカルに cdk CLI がないので、毎回 dlx 経由で実行する
       - name: CDK synth
         run: pnpm dlx aws-cdk@2 cdk synth
