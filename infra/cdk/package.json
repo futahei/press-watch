@@ -12,6 +12,7 @@
   },
   "devDependencies": {
     "@types/node": "^24.10.1",
+    "aws-cdk": "^2.227.0",
     "aws-cdk-lib": "^2.227.0",
     "constructs": "^10.4.3",
     "esbuild": "^0.27.0",
