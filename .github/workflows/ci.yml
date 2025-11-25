@@ -94,4 +94,4 @@ jobs:
         run: pnpm install
 
       - name: CDK synth
-        run: pnpm dlx aws-cdk@2 cdk synth
+        run: pnpm dlx aws-cdk@2 cdk synth -a "pnpm exec ts-node --project tsconfig.json bin/presswatch.ts"
