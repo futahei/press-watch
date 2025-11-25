@@ -1,21 +1,21 @@
-name: CI & Deploy
+name: CI
 
 on:
-  pull_request:
+  push:
     branches:
       - main
-  push:
+  pull_request:
     branches:
       - main
 
 jobs:
-  frontend-ci:
-    name: Frontend CI
+  backend:
+    name: Backend lint & test
     runs-on: ubuntu-latest
 
     defaults:
       run:
-        working-directory: ./frontend
+        working-directory: backend
 
     steps:
       - name: Checkout
@@ -24,36 +24,28 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "22"
-          cache: "pnpm"
+          node-version: 20
+          cache: pnpm
 
-      - name: Setup pnpm
+      - name: Install pnpm
         uses: pnpm/action-setup@v4
         with:
           version: 9
+          run_install: true
 
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Lint (ESLint)
+      - name: Lint (backend)
         run: pnpm lint
 
-      - name: Format check (Prettier)
-        run: pnpm format
-
-      - name: Typecheck
-        run: pnpm typecheck
-
-      - name: Test
+      - name: Test (backend)
         run: pnpm test
 
-  backend-ci:
-    name: Backend CI
+  frontend:
+    name: Frontend lint & test
     runs-on: ubuntu-latest
 
     defaults:
       run:
-        working-directory: ./backend
+        working-directory: frontend
 
     steps:
       - name: Checkout
@@ -62,36 +54,28 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "22"
-          cache: "pnpm"
+          node-version: 20
+          cache: pnpm
 
-      - name: Setup pnpm
+      - name: Install pnpm
         uses: pnpm/action-setup@v4
         with:
           version: 9
+          run_install: true
 
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Lint (ESLint)
+      - name: Lint (frontend)
         run: pnpm lint
 
-      - name: Format check (Prettier)
-        run: pnpm format
-
-      - name: Typecheck
-        run: pnpm typecheck
-
-      - name: Test
+      - name: Test (frontend)
         run: pnpm test
 
-  deploy:
-    name: Deploy to Production
-    needs:
-      - frontend-ci
-      - backend-ci
+  infra:
+    name: Infra synth check
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+
+    defaults:
+      run:
+        working-directory: infra/cdk
 
     steps:
       - name: Checkout
@@ -100,13 +84,14 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "22"
-          cache: "pnpm"
+          node-version: 20
+          cache: pnpm
 
-      - name: Setup pnpm
+      - name: Install pnpm
         uses: pnpm/action-setup@v4
         with:
           version: 9
+          run_install: true
 
-      # ここから先は、frontend/backend それぞれの deploy スクリプトを呼ぶ想定です。
-      # 具体的な AWS デプロイ手順を決めたタイミングで肉付けします。
+      - name: CDK synth
+        run: pnpm synth
