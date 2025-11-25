@@ -21,17 +21,19 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      # Node セットアップ（pnpm のために corepack を有効化）
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: pnpm
+          check-latest: true
 
-      - name: Install pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 9
-          run_install: true
+      # pnpm を使えるようにする（corepack 経由）
+      - name: Enable corepack
+        run: corepack enable
+
+      - name: Install dependencies
+        run: pnpm install
 
       - name: Lint (backend)
         run: pnpm lint
@@ -55,13 +57,13 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: pnpm
+          check-latest: true
 
-      - name: Install pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 9
-          run_install: true
+      - name: Enable corepack
+        run: corepack enable
+
+      - name: Install dependencies
+        run: pnpm install
 
       - name: Lint (frontend)
         run: pnpm lint
@@ -85,13 +87,13 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: pnpm
+          check-latest: true
 
-      - name: Install pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 9
-          run_install: true
+      - name: Enable corepack
+        run: corepack enable
+
+      - name: Install dependencies
+        run: pnpm install
 
       - name: CDK synth
         run: pnpm synth
