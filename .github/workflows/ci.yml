@@ -21,14 +21,12 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      # Node セットアップ（pnpm のために corepack を有効化）
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 20
           check-latest: true
 
-      # pnpm を使えるようにする（corepack 経由）
       - name: Enable corepack
         run: corepack enable
 
@@ -65,8 +63,9 @@ jobs:
       - name: Install dependencies
         run: pnpm install
 
+      # npm scripts 経由ではなく、Next CLI を直接叩く
       - name: Lint (frontend)
-        run: pnpm lint
+        run: pnpm exec next lint
 
       - name: Test (frontend)
         run: pnpm test
@@ -95,5 +94,6 @@ jobs:
       - name: Install dependencies
         run: pnpm install
 
+      # ローカルに cdk CLI がないので、毎回 dlx 経由で実行する
       - name: CDK synth
-        run: pnpm synth
+        run: pnpm dlx aws-cdk@2 cdk synth
