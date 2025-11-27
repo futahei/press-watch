@@ -9,7 +9,8 @@
     "format:fix": "prettier \"src/**/*.{ts,tsx,js,json,md}\" --write",
     "typecheck": "tsc --noEmit",
     "test": "vitest",
-    "test:watch": "vitest --watch"
+    "test:watch": "vitest --watch",
+    "try:summarize": "tsx --env-file .env.local ./scripts/trySummarize.ts"
   },
   "devDependencies": {
     "@types/aws-lambda": "^8.10.159",
@@ -20,6 +21,7 @@
     "aws-sdk": "^2.1692.0",
     "eslint": "^9.0.0",
     "prettier": "^3.0.0",
+    "tsx": "^4.20.6",
     "typescript": "^5.6.0",
     "vitest": "^2.0.0"
   },
