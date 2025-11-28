@@ -3,15 +3,16 @@ import type {
   GetGroupArticlesResponse,
   PushSubscribeRequest,
   PushSubscribeResponse,
+  SummarizeArticleRequest,
+  SummarizeArticleResponse,
 } from "./types";
 
 /**
  * 将来的には AWS API Gateway 経由のエンドポイントになる想定。
- * 例: https://api.presswatch.example.com/groups/{groupId}/articles
  *
  * 現時点では:
  * - NEXT_PUBLIC_API_BASE_URL が設定されていれば、その URL へ fetch を行う
- * - 設定されていなければ、ローカルのモックデータを返す
+ * - 設定されていなければ、ローカルのモックデータを返す（記事一覧のみ）
  */
 
 const MOCK_ARTICLES: Record<string, ArticleSummary[]> = {
@@ -59,6 +60,9 @@ function getMockGroupArticles(groupId: string): GetGroupArticlesResponse {
   };
 }
 
+/**
+ * グループ記事一覧取得
+ */
 export async function fetchGroupArticles(
   groupId: string
 ): Promise<GetGroupArticlesResponse> {
@@ -84,7 +88,6 @@ export async function fetchGroupArticles(
       headers: {
         Accept: "application/json",
       },
-      // 必要なら credentials や Authorization も後で追加
     });
 
     if (!res.ok) {
@@ -99,7 +102,6 @@ export async function fetchGroupArticles(
 
     const data = (await res.json()) as GetGroupArticlesResponse;
 
-    // 最低限のバリデーション（articles が配列かどうか）
     if (!Array.isArray(data.articles)) {
       console.error(
         "[fetchGroupArticles] Unexpected response shape, falling back to mock:",
@@ -118,6 +120,9 @@ export async function fetchGroupArticles(
   }
 }
 
+/**
+ * Push 通知購読登録
+ */
 export async function subscribePush(
   payload: PushSubscribeRequest
 ): Promise<PushSubscribeResponse | null> {
@@ -148,5 +153,47 @@ export async function subscribePush(
   }
 
   const data = (await res.json()) as PushSubscribeResponse;
+  return data;
+}
+
+/**
+ * 要約 API 呼び出し (/summarize)
+ */
+export async function summarizeArticle(
+  payload: SummarizeArticleRequest
+): Promise<SummarizeArticleResponse> {
+  const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
+
+  if (!baseUrl) {
+    throw new Error(
+      "summarizeArticle を呼び出すには NEXT_PUBLIC_API_BASE_URL が必要です。"
+    );
+  }
+
+  const url = new URL("/summarize", baseUrl);
+
+  const res = await fetch(url.toString(), {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Accept: "application/json",
+    },
+    body: JSON.stringify(payload),
+  });
+
+  if (!res.ok) {
+    const text = await res.text().catch(() => "");
+    console.error(
+      "[summarizeArticle] API error:",
+      res.status,
+      res.statusText,
+      text
+    );
+    throw new Error(
+      `Failed to summarize article: ${res.status} ${res.statusText}`
+    );
+  }
+
+  const data = (await res.json()) as SummarizeArticleResponse;
   return data;
 }
