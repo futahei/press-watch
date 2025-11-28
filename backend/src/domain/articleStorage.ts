@@ -1,3 +1,5 @@
+import { createHash } from "crypto";
+
 export type GroupId = string;
 export type CompanyId = string;
 export type ArticleId = string;
@@ -65,6 +67,15 @@ export function buildArticleSk(
   articleId: ArticleId
 ): string {
   return `PUBLISHED#${publishedAt}#ARTICLE#${articleId}`;
+}
+
+/**
+ * URL から安定した articleId を生成する。
+ * - URL が同一であれば同じ ID になるよう SHA-256 の先頭部分を使用
+ */
+export function generateArticleIdFromUrl(url: string): ArticleId {
+  const hash = createHash("sha256").update(url).digest("hex");
+  return `url_${hash.slice(0, 24)}`;
 }
 
 /**

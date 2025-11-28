@@ -28,6 +28,11 @@ export interface ArticleRepository {
     groupId: GroupId,
     options?: { limit?: number }
   ): Promise<ArticleDetail[]>;
+
+  /**
+   * 記事を保存する（同一 PK/SK は上書き）。
+   */
+  put(article: ArticleDetail): Promise<void>;
 }
 
 /**

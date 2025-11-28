@@ -1,6 +1,6 @@
 import { DynamoDB } from "aws-sdk";
 import type { ArticleDetail, ArticleRecord } from "../domain/articleStorage.js";
-import { toArticleDetail } from "../domain/articleStorage.js";
+import { toArticleDetail, toArticleRecord } from "../domain/articleStorage.js";
 import {
   buildGroupArticlesQueryInput,
   type ArticleRepository,
@@ -13,6 +13,9 @@ import {
 export interface DynamoDbLikeClient {
   query(params: DynamoDB.DocumentClient.QueryInput): {
     promise(): Promise<DynamoDB.DocumentClient.QueryOutput>;
+  };
+  put(params: DynamoDB.DocumentClient.PutItemInput): {
+    promise(): Promise<DynamoDB.DocumentClient.PutItemOutput>;
   };
 }
 
@@ -49,5 +52,21 @@ export class DynamoDbArticleRepository implements ArticleRepository {
     const items = (result.Items ?? []) as ArticleRecord[];
 
     return items.map((item) => toArticleDetail(item));
+  }
+
+  async put(article: ArticleDetail): Promise<void> {
+    const now = new Date().toISOString();
+    const record = toArticleRecord({
+      article,
+      createdAt: now,
+      updatedAt: now,
+    });
+
+    await this.client
+      .put({
+        TableName: this.tableName,
+        Item: record,
+      })
+      .promise();
   }
 }

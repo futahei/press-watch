@@ -135,7 +135,28 @@ export class PressWatchStack extends Stack {
     );
 
     //
-    // 6. HTTP API 定義
+    // 6. 記事保存用 Lambda
+    //
+    const saveArticleFunction = new NodejsFunction(
+      this,
+      "SaveArticleFunction",
+      {
+        entry: path.resolve(
+          __dirname,
+          "../../../backend/src/lambda/saveArticleHandler.ts"
+        ),
+        handler: "handler",
+        environment: {
+          ARTICLES_TABLE_NAME: articlesTable.tableName,
+        },
+        ...commonNodeJsFunctionProps,
+      }
+    );
+
+    articlesTable.grantReadWriteData(saveArticleFunction);
+
+    //
+    // 7. HTTP API 定義
     //
     const httpApi = new HttpApi(this, "PressWatchHttpApi", {
       apiName: "PressWatchHttpApi",
@@ -180,8 +201,18 @@ export class PressWatchStack extends Stack {
       ),
     });
 
+    // 新規: /articles → 記事保存
+    httpApi.addRoutes({
+      path: "/articles",
+      methods: [HttpMethod.POST],
+      integration: new HttpLambdaIntegration(
+        "SaveArticleIntegration",
+        saveArticleFunction
+      ),
+    });
+
     //
-    // 7. 出力
+    // 8. 出力
     //
     new CfnOutput(this, "ArticlesTableName", {
       value: articlesTable.tableName,

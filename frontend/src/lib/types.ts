@@ -17,17 +17,21 @@ export interface GetGroupArticlesResponse {
 
 // Push 通知購読リクエスト
 export interface PushSubscribeRequest {
-  endpoint: string;
-  keys: {
-    p256dh: string;
-    auth: string;
+  subscription: {
+    endpoint: string;
+    keys: {
+      p256dh: string;
+      auth: string;
+    };
   };
-  // 将来的に groupId や userId などを紐づけるならここに追加
+  groupIds: string[];
+  userAgent?: string;
 }
 
-// Push 通知購読レスポンス（必要に応じて拡張）
+// Push 通知購読レスポンス
 export interface PushSubscribeResponse {
-  success: boolean;
+  subscriptionId: string;
+  groupIds: string[];
 }
 
 // ---- 要約 API 用の型 ----

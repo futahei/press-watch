@@ -131,7 +131,10 @@ export async function subscribePush(
   if (!baseUrl) {
     console.info(
       "[subscribePush] NEXT_PUBLIC_API_BASE_URL が未設定のため、購読情報はサーバーには送信しません。",
-      payload
+      {
+        endpoint: payload.subscription.endpoint,
+        groupIds: payload.groupIds,
+      }
     );
     return null;
   }
