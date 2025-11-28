@@ -64,7 +64,7 @@ export class PressWatchStack extends Stack {
     //
     const commonNodeJsFunctionProps: Partial<NodejsFunctionProps> = {
       runtime: Runtime.NODEJS_20_X,
-      timeout: Duration.seconds(10),
+      timeout: Duration.seconds(30),
       memorySize: 256,
       bundling: {
         minify: true,

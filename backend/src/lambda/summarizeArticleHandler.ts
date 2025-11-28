@@ -7,17 +7,11 @@ import { OpenAiSummarizer } from "../infra/openaiSummarizer.js";
 
 /**
  * Lambda 本番用の Summarizer ファクトリ。
- * - テストではこのファイルの下の handleSummarize を直接呼び出し、
- *   フェイク Summarizer を注入することで OpenAI への依存を避ける。
  */
 function createSummarizer(): Summarizer {
   return new OpenAiSummarizer();
 }
 
-/**
- * API リクエストのボディ形（PressWatch 用）。
- * - SummarizeInput とほぼ同じだが、バリデーション用に別途定義。
- */
 interface SummarizeRequestBody {
   title: string;
   companyName: string;
@@ -26,15 +20,8 @@ interface SummarizeRequestBody {
   body: string;
 }
 
-/**
- * API レスポンスの形。
- * - そのまま SummarizeResult を返しても良いが、将来拡張に備えてラップしておく。
- */
 interface SummarizeResponseBody extends SummarizeResult {}
 
-/**
- * 共通のレスポンス生成ヘルパー。
- */
 function jsonResponse(statusCode: number, body: unknown) {
   return {
     statusCode,
@@ -46,10 +33,6 @@ function jsonResponse(statusCode: number, body: unknown) {
   };
 }
 
-/**
- * 入力バリデーション。
- * - 必須: title, companyName, url, body
- */
 function validateRequestBody(
   raw: any
 ): { ok: true; value: SummarizeInput } | { ok: false; message: string } {
@@ -93,11 +76,11 @@ function validateRequestBody(
   return { ok: true, value: input };
 }
 
-/**
- * 実ロジック本体。
- * - Summarizer を引数で受け取ることでテスト時に差し替え可能にしている。
- */
 export async function handleSummarize(event: any, summarizer: Summarizer) {
+  console.log("[summarizeArticleHandler] event received", {
+    hasBody: !!event?.body,
+  });
+
   if (!event?.body) {
     return jsonResponse(400, {
       message: "リクエストボディがありません。",
@@ -109,7 +92,11 @@ export async function handleSummarize(event: any, summarizer: Summarizer) {
   try {
     parsedBody =
       typeof event.body === "string" ? JSON.parse(event.body) : event.body;
-  } catch {
+  } catch (error) {
+    console.error(
+      "[summarizeArticleHandler] JSON parse error:",
+      (error as Error).message
+    );
     return jsonResponse(400, {
       message: "リクエストボディの JSON パースに失敗しました。",
     });
@@ -117,13 +104,24 @@ export async function handleSummarize(event: any, summarizer: Summarizer) {
 
   const validation = validateRequestBody(parsedBody);
   if (!validation.ok) {
+    console.warn("[summarizeArticleHandler] validation failed:", validation);
     return jsonResponse(400, { message: validation.message });
   }
 
   try {
+    console.log(
+      "[summarizeArticleHandler] call summarizer with",
+      JSON.stringify({
+        title: validation.value.title,
+        companyName: validation.value.companyName,
+      })
+    );
+
     const result: SummarizeResult = await summarizer.summarize(
       validation.value
     );
+
+    console.log("[summarizeArticleHandler] summarizer succeeded");
 
     const responseBody: SummarizeResponseBody = {
       summaryText: result.summaryText,
@@ -139,10 +137,6 @@ export async function handleSummarize(event: any, summarizer: Summarizer) {
   }
 }
 
-/**
- * AWS Lambda 用のエクスポート。
- * - CDK からこの handler 名を指定して利用する。
- */
 export const handler = async (event: any) => {
   const summarizer = createSummarizer();
   return handleSummarize(event, summarizer);
