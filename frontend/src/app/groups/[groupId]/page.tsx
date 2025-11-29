@@ -65,6 +65,15 @@ export default async function GroupPage({ params }: PageProps) {
                       ? article.summaryText
                       : "要約はまだ生成されていません。"}
                   </p>
+
+                  <div className="flex items-center justify-between text-[10px] text-slate-500 dark:text-slate-400">
+                    <span>{article.companyId ?? "企業ID未設定"}</span>
+                    {(article.isNew ?? isNewBadge(article.publishedAt)) && (
+                      <span className="inline-flex items-center px-2 py-0.5 text-[10px] font-semibold rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-200">
+                        NEW
+                      </span>
+                    )}
+                  </div>
                 </div>
               </Link>
             </li>
@@ -73,4 +82,13 @@ export default async function GroupPage({ params }: PageProps) {
       )}
     </main>
   );
+}
+
+function isNewBadge(publishedAt?: string): boolean {
+  if (!publishedAt) return false;
+  const published = new Date(publishedAt).getTime();
+  if (Number.isNaN(published)) return false;
+  const now = Date.now();
+  const fortyEightHoursMs = 48 * 60 * 60 * 1000;
+  return now - published <= fortyEightHoursMs;
 }

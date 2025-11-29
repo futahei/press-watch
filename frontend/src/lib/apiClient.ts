@@ -16,7 +16,6 @@ import type {
  * - NEXT_PUBLIC_API_BASE_URL が設定されていれば、その URL へ fetch を行う
  * - 設定されていなければ、ローカルのモックデータを返す（記事一覧のみ）
  */
-
 const MOCK_ARTICLES: Record<string, ArticleSummary[]> = {
   default: [
     {
