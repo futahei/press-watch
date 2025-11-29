@@ -16,6 +16,20 @@ const COMPANY_CONFIGS: Record<string, CompanyConfig> = {
       maxItems: 10,
     },
   },
+  // 実ページ例: シックス・アパートのニュース一覧（構造が変わる可能性があるので開発時のみ利用）
+  "six-apart": {
+    id: "six-apart",
+    name: "Six Apart",
+    pressReleaseUrl: "https://www.sixapart.jp/news/",
+    crawlConfig: {
+      type: "simpleList",
+      itemSelector: "ul.mt-news-list > li",
+      titleSelector: "a",
+      urlSelector: "a",
+      dateSelector: "time",
+      maxItems: 20,
+    },
+  },
 };
 
 function jsonResponse(statusCode: number, body: unknown) {
