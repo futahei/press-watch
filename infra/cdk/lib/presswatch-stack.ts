@@ -66,10 +66,15 @@ export class PressWatchStack extends Stack {
       runtime: Runtime.NODEJS_20_X,
       timeout: Duration.seconds(30),
       memorySize: 256,
+      depsLockFilePath: path.resolve(
+        __dirname,
+        "../../../backend/pnpm-lock.yaml"
+      ),
       bundling: {
         minify: true,
         sourceMap: true,
         externalModules: ["aws-sdk", "@aws-sdk/*"],
+        nodeModules: ["openai"],
       },
     };
 
