@@ -3,15 +3,14 @@
 企業のプレスリリースを自動監視し、AI 要約・専門用語解説・通知まで行う Web サービスです。
 RSS 非対応の企業サイトも対象にでき、複数企業を「グループ」としてまとめることで効率よく追跡できます。
 
-## 📚 機能概要
+## 📚 機能概要（現状）
 
-- **プレスリリース自動監視（最大 半日に 1 回）**
-- **AI 要約表示**
-- **専門用語の自動解説**
-- **企業のグループ管理**
-- **ブラウザ Push 通知（Web Push / VAPID 使用）**
-- **ライト / ダークテーマ切り替え（デフォルト system）**
-- 管理者のみアクセス可能な設定ページ（パスワード + Cookie）
+- **記事一覧 / 記事詳細 API**（DynamoDB から取得）
+- **要約 API `/summarize`**（保存なし）と **記事保存 API `/articles`**
+- **簡易クロール → DynamoDB 保存 API**（`/crawl/{companyId}/save`）
+- **企業グループ管理**（`/groups/{groupId}`）
+- **ブラウザ Push 通知の購読登録 API**（配信は今後）
+- フロントは **ライト / ダークテーマ**、NEW バッジ（公開 48h 以内）
 
 ## 🏗️ 技術スタック
 
@@ -42,10 +41,10 @@ RSS 非対応の企業サイトも対象にでき、複数企業を「グルー�
 
 ```txt
 press-watch/
-├── frontend/   # Next.js フロントエンド
-├── backend/    # Lambda ロジック（TS）
+├── frontend/         # Next.js フロントエンド
+├── backend/          # Lambda ロジック（TS）
 └── infra/
-    └── cdk/    # AWS CDK (DynamoDB / Lambda / API Gateway)
+    └── cdk/          # AWS CDK (DynamoDB / Lambda / API Gateway)
 ```
 
 ## 🔧 セットアップ
@@ -53,7 +52,9 @@ press-watch/
 ### 1. 依存インストール
 
 ```bash
-pnpm install
+cd frontend && pnpm install
+cd ../backend && pnpm install
+cd ../infra/cdk && pnpm install
 ```
 
 ### 2. フロントローカル起動
@@ -81,6 +82,8 @@ pnpm test
 cd backend
 pnpm test
 ```
+
+※ Node.js は Volta 管理の v20 を利用する前提。
 
 ## ☁️ インフラ構成（CDK）
 
@@ -110,17 +113,27 @@ pnpm test
 
 ### 2. Lambda 関数
 
-| Lambda 名                | 説明                                     |
-| ------------------------ | ---------------------------------------- |
-| GetGroupArticlesFunction | 記事一覧取得 (GET /groups/{id}/articles) |
-| PushSubscribeFunction    | Push 購読登録 (POST /push/subscribe)     |
+| Lambda 名                    | 説明                                                           |
+| ---------------------------- | -------------------------------------------------------------- |
+| GetGroupArticlesFunction     | 記事一覧取得 (GET /groups/{groupId}/articles)                 |
+| GetArticleDetailFunction     | 記事詳細取得 (GET /groups/{groupId}/articles/{articleId})     |
+| SaveArticleFunction          | 記事保存 (POST /articles)                                     |
+| SummarizeArticleFunction     | 要約生成のみ (POST /summarize)                                |
+| CrawlCompanyFunction         | 単体企業のクロール結果返却 (GET /crawl/{companyId})           |
+| CrawlAndSaveFunction         | クロールして DynamoDB に保存 (POST /crawl/{companyId}/save)   |
+| PushSubscribeFunction        | Push 購読登録 (POST /push/subscribe)                          |
 
 ### 3. API Gateway HTTP API
 
-| メソッド | パス                         | Lambda                   |
-| -------- | ---------------------------- | ------------------------ |
-| GET      | `/groups/{groupId}/articles` | GetGroupArticlesFunction |
-| POST     | `/push/subscribe`            | PushSubscribeFunction    |
+| メソッド     | パス                                      | Lambda                       |
+| ------------ | ----------------------------------------- | ---------------------------- |
+| GET          | `/groups/{groupId}/articles`              | GetGroupArticlesFunction     |
+| GET          | `/groups/{groupId}/articles/{articleId}`  | GetArticleDetailFunction     |
+| POST         | `/articles`                               | SaveArticleFunction          |
+| POST         | `/summarize`                              | SummarizeArticleFunction     |
+| GET          | `/crawl/{companyId}`                      | CrawlCompanyFunction         |
+| POST / GET   | `/crawl/{companyId}/save`                 | CrawlAndSaveFunction         |
+| POST         | `/push/subscribe`                         | PushSubscribeFunction        |
 
 CORS 設定済み：Next.js のローカル/本番から利用可。
 
@@ -174,20 +187,30 @@ NEXT_PUBLIC_API_BASE_URL=https://abcd1234.execute-api.ap-northeast-1.amazonaws.c
 
 これにより、AWS へデプロイしなくても開発が進められます。
 
+## 🔎 簡易クロール（検証用）
+
+- 対象企業設定は `backend/src/infra/companyConfigs.ts`（例：`six-apart`）。
+- API 例：`curl -X POST "https://<api-id>.execute-api.ap-northeast-1.amazonaws.com/crawl/six-apart/save?groupId=default"`
+- 保存後、`/groups/{groupId}` で記事一覧・詳細を確認できます。
+
 ## 🚀 デプロイ
 
-（今後実装予定）
+### バックエンド / インフラ（CDK）
 
-- フロント：S3 + CloudFront
-- バックエンド：API Gateway + Lambda
-- CI/CD：GitHub Actions（lint・test・cdk deploy）
+```bash
+cd infra/cdk
+pnpm synth
+pnpm cdk deploy
+```
+
+### フロント
+
+（将来の S3+CloudFront 配信を想定。現状はローカル開発または別途ホスティング。）
 
 ## 🔮 今後のロードマップ
 
-- 本物のクローラ導入（Node.js + Playwright? / Cheerio?）
-- AI 要約生成（OpenAI API）
-- 専門用語解説（LLM）
+- Playwright 等による本格クロール
+- 要約結果の自動保存＆一覧反映
 - 通知送信バッチ（EventBridge + Lambda）
-- 管理設定ページ（管理者パスワード + Cookie 認証）
-- 記事詳細ページ
-- サービスワーカーでの Web Push サポート
+- 管理設定ページ（認証）
+- Web Push 配信処理
