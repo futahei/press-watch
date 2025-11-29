@@ -14,6 +14,7 @@ export default async function GroupPage({ params }: PageProps) {
   const { groupId } = await params;
 
   const { articles } = await fetchGroupArticles(groupId);
+  const isUsingRealApi = Boolean(process.env.NEXT_PUBLIC_API_BASE_URL);
 
   return (
     <main className="max-w-5xl mx-auto px-4 py-8 space-y-6">
@@ -25,6 +26,11 @@ export default async function GroupPage({ params }: PageProps) {
           監視対象の企業から取得したプレスリリース一覧です。タイトルをクリックすると詳細を表示します。
         </p>
         <NotificationToggle groupId={groupId} />
+        {!isUsingRealApi && (
+          <p className="text-xs text-amber-700 dark:text-amber-400">
+            API が未設定のためモックデータを表示しています。
+          </p>
+        )}
       </header>
 
       {articles.length === 0 ? (
