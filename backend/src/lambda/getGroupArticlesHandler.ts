@@ -2,6 +2,10 @@ import { DynamoDbArticleRepository } from "../repository/dynamoArticleRepository
 import type { ArticleDetail } from "../domain/articleStorage.js";
 
 const TABLE_NAME = process.env.ARTICLES_TABLE_NAME;
+const NEW_THRESHOLD_HOURS =
+  process.env.NEW_THRESHOLD_HOURS && Number(process.env.NEW_THRESHOLD_HOURS) > 0
+    ? Number(process.env.NEW_THRESHOLD_HOURS)
+    : 48;
 
 /**
  * フロントエンドが期待する ArticleSummary 相当の型。
@@ -71,7 +75,7 @@ export const handler = async (event: any) => {
     url: a.url,
     publishedAt: a.publishedAt,
     summaryText: a.summaryText,
-    isNew: isNewWithinHours(a.publishedAt, 48),
+    isNew: isNewWithinHours(a.publishedAt, NEW_THRESHOLD_HOURS),
   }));
 
   const response: GetGroupArticlesResponse = {
