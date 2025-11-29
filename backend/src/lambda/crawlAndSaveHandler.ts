@@ -82,7 +82,9 @@ export const handler = async (event: any) => {
  * 「2024年 12月 2日（月）」のような和暦風フォーマットを ISO 8601 に変換する。
  * - 変換できなければ undefined を返す。
  */
-export function parsePublishedAtToIso(raw: string | undefined): string | undefined {
+export function parsePublishedAtToIso(
+  raw: string | undefined
+): string | undefined {
   if (!raw) return undefined;
 
   const normalized = raw.replace(/[\u3000\s]+/g, "");
@@ -90,7 +92,14 @@ export function parsePublishedAtToIso(raw: string | undefined): string | undefin
   if (!m) return undefined;
 
   const [, year, month, day] = m;
-  const date = new Date(Number(year), Number(month) - 1, Number(day));
+  const yearNum = Number(year);
+  const monthNum = Number(month) - 1;
+  const dayNum = Number(day);
+
+  // JST（UTC+9）の 0 時を基準に ISO 文字列へ変換（実行環境のタイムゾーン非依存にする）
+  const jstMidnightUtcMs =
+    Date.UTC(yearNum, monthNum, dayNum) - 9 * 60 * 60 * 1000;
+  const date = new Date(jstMidnightUtcMs);
   if (!Number.isFinite(date.getTime())) return undefined;
 
   return date.toISOString();
