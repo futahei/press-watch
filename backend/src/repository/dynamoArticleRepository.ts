@@ -1,4 +1,4 @@
-import { DynamoDB } from "aws-sdk";
+import { DynamoDB, config as awsConfig } from "aws-sdk";
 import type { ArticleDetail, ArticleRecord } from "../domain/articleStorage.js";
 import { toArticleDetail, toArticleRecord } from "../domain/articleStorage.js";
 import {
@@ -31,9 +31,27 @@ export class DynamoDbArticleRepository implements ArticleRepository {
 
   constructor(params: { tableName: string; client?: DynamoDbLikeClient }) {
     this.tableName = params.tableName;
+
+    // 明示的にリージョンを設定（Lambda 環境変数 AWS_REGION を優先）。
+    if (!awsConfig.region) {
+      awsConfig.update({
+        region: process.env.AWS_REGION ?? "ap-northeast-1",
+      });
+    }
+
     this.client =
       params.client ??
-      new DynamoDB.DocumentClient({ convertEmptyValues: true });
+      new DynamoDB.DocumentClient({
+        convertEmptyValues: true,
+        httpOptions: {
+          connectTimeout: 1500,
+          timeout: 5000, // 長時間ハングしないよう短めのタイムアウト
+        },
+        maxRetries: 0,
+        retryDelayOptions: {
+          base: 0,
+        },
+      });
   }
 
   async listByGroup(
@@ -65,12 +83,19 @@ export class DynamoDbArticleRepository implements ArticleRepository {
       updatedAt: now,
     });
 
-    await this.client
-      .put({
+    try {
+      await putWithAbort(this.client, {
         TableName: this.tableName,
         Item: record,
-      })
-      .promise();
+      });
+    } catch (error) {
+      console.error("[DynamoDbArticleRepository] put error", {
+        tableName: this.tableName,
+        articleId: article.id,
+        error,
+      });
+      throw error;
+    }
   }
 
   /**
@@ -105,4 +130,37 @@ export class DynamoDbArticleRepository implements ArticleRepository {
 
     return toArticleDetail(item);
   }
+}
+
+//------------------------------------------------------------------------------
+// Helpers
+//------------------------------------------------------------------------------
+async function putWithAbort(
+  client: DynamoDbLikeClient,
+  params: DynamoDB.DocumentClient.PutItemInput,
+  timeoutMs: number = 8000
+): Promise<DynamoDB.DocumentClient.PutItemOutput> {
+  return new Promise((resolve, reject) => {
+    const req = (client as DynamoDB.DocumentClient).put(params);
+
+    const timer = setTimeout(() => {
+      console.error("[DynamoDbArticleRepository] put timeout fired", {
+        tableName: params.TableName,
+        articleId: (params.Item as any)?.articleId,
+      });
+      try {
+        req.abort();
+      } catch (e) {
+        // abort に失敗してもログだけ出す
+        console.error("[DynamoDbArticleRepository] abort failed", e);
+      }
+      reject(new Error("[DynamoDbArticleRepository] put timeout"));
+    }, timeoutMs);
+
+    req
+      .promise()
+      .then((res) => resolve(res))
+      .catch((err) => reject(err))
+      .finally(() => clearTimeout(timer));
+  });
 }

@@ -69,8 +69,8 @@ export class PressWatchStack extends Stack {
       bundling: {
         minify: true,
         sourceMap: true,
-        // aws-sdk v2 は Lambda ランタイムに同梱されているので external にする
-        externalModules: ["aws-sdk", "@aws-sdk/*"],
+        // Node.js 20 ランタイムでは aws-sdk v2 が同梱されないため external から外す
+        externalModules: ["@aws-sdk/*"],
       },
     };
 

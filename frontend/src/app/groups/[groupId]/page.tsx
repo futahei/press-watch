@@ -84,6 +84,9 @@ export default async function GroupPage({ params }: PageProps) {
   );
 }
 
+//------------------------------------------------------------------------------
+// Helpers
+//------------------------------------------------------------------------------
 function isNewBadge(publishedAt?: string): boolean {
   if (!publishedAt) return false;
   const published = new Date(publishedAt).getTime();

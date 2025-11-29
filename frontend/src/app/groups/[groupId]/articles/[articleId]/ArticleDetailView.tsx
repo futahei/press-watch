@@ -16,17 +16,15 @@ export function ArticleDetailView({ groupId, articleId }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [fallbackUsed, setFallbackUsed] = useState(false);
 
+  /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     let cancelled = false;
 
-    // 初期化は同期 state 更新を避けるため、描画反映後にキューする
-    setTimeout(() => {
-      if (cancelled) return;
-      setArticle(null);
-      setLoading(true);
-      setError(null);
-      setFallbackUsed(false);
-    }, 0);
+    // 初期化
+    setArticle(null);
+    setLoading(true);
+    setError(null);
+    setFallbackUsed(false);
 
     fetchArticleDetail(groupId, articleId)
       .then((res) => {
@@ -58,6 +56,7 @@ export function ArticleDetailView({ groupId, articleId }: Props) {
       cancelled = true;
     };
   }, [groupId, articleId]);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   if (loading) {
     return <p className="text-sm text-slate-500">記事を読み込み中です...</p>;
@@ -84,9 +83,9 @@ export function ArticleDetailView({ groupId, articleId }: Props) {
   return (
     <div className="space-y-6">
       {fallbackUsed && (
-        <p className="text-xs text-amber-600 dark:text-amber-400">
+        <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800 dark:border-amber-900/60 dark:bg-amber-950/40 dark:text-amber-200">
           API が設定されていないためモックデータを表示しています。
-        </p>
+        </div>
       )}
 
       <header className="space-y-2">
@@ -111,10 +110,15 @@ export function ArticleDetailView({ groupId, articleId }: Props) {
         <p className="text-sm whitespace-pre-wrap">{article.summaryText}</p>
       </section>
 
-      <section className="space-y-2">
-        <h2 className="text-sm font-semibold text-slate-700 dark:text-slate-200">
-          用語集
-        </h2>
+      <section className="space-y-3">
+        <div className="flex items-center gap-2">
+          <h2 className="text-sm font-semibold text-slate-700 dark:text-slate-200">
+            用語集
+          </h2>
+          <span className="text-[10px] text-slate-500 dark:text-slate-400">
+            {article.glossary.length} 件
+          </span>
+        </div>
         {article.glossary.length === 0 ? (
           <p className="text-sm text-slate-600 dark:text-slate-300">
             特に用語は登録されていません。
@@ -124,17 +128,19 @@ export function ArticleDetailView({ groupId, articleId }: Props) {
             {article.glossary.map((item, idx) => (
               <li
                 key={`${item.term}-${idx}`}
-                className="rounded-lg border border-slate-200 dark:border-slate-800 bg-white/70 dark:bg-slate-900/70 px-3 py-2"
+                className="rounded-lg border border-slate-200 dark:border-slate-800 bg-white/70 dark:bg-slate-900/70 px-3 py-2 space-y-1"
               >
-                <div className="text-sm font-medium">
-                  {item.term}
-                  {item.reading && (
-                    <span className="ml-2 text-xs text-slate-500">
-                      ({item.reading})
-                    </span>
-                  )}
+                <div className="flex items-center justify-between gap-2">
+                  <div className="text-sm font-medium">
+                    {item.term}
+                    {item.reading && (
+                      <span className="ml-2 text-xs text-slate-500">
+                        ({item.reading})
+                      </span>
+                    )}
+                  </div>
                 </div>
-                <div className="text-xs text-slate-700 dark:text-slate-300 mt-1">
+                <div className="text-xs text-slate-700 dark:text-slate-300 leading-relaxed">
                   {item.description}
                 </div>
               </li>

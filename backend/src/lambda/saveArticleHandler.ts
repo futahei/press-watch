@@ -141,10 +141,12 @@ export const handler = async (event: any) => {
 export async function handleSaveArticle(event: any, repo: ArticleRepository) {
   const method = event?.httpMethod ?? event?.requestContext?.http?.method;
   if (method && method.toUpperCase() !== "POST") {
+    console.warn("[saveArticleHandler] method not allowed:", method);
     return jsonResponse(405, { message: "Method Not Allowed" });
   }
 
   if (!event?.body) {
+    console.warn("[saveArticleHandler] missing body");
     return jsonResponse(400, { message: "リクエストボディがありません。" });
   }
 
