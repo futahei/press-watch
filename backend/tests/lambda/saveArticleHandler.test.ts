@@ -14,6 +14,10 @@ class FakeArticleRepository implements ArticleRepository {
   async put(article: ArticleDetail): Promise<void> {
     this.saved = article;
   }
+
+  async getByGroupAndId(): Promise<ArticleDetail | null> {
+    return null;
+  }
 }
 
 describe("saveArticleHandler.handleSaveArticle", () => {

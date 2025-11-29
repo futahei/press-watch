@@ -37,6 +37,9 @@ describe("DynamoDbArticleRepository", () => {
       put: () => ({
         promise: async () => ({}),
       }),
+      get: () => ({
+        promise: async () => ({}),
+      }),
     };
 
     const repo = new DynamoDbArticleRepository({
@@ -79,6 +82,9 @@ describe("DynamoDbArticleRepository", () => {
           promise: async () => ({}),
         };
       },
+      get: () => ({
+        promise: async () => ({}),
+      }),
     };
 
     const repo = new DynamoDbArticleRepository({
@@ -107,5 +113,67 @@ describe("DynamoDbArticleRepository", () => {
     expect(putParams.Item.articleId).toBe("a1");
     expect(typeof putParams.Item.createdAt).toBe("string");
     expect(typeof putParams.Item.updatedAt).toBe("string");
+  });
+
+  it("getByGroupAndId should query and return article or null", async () => {
+    const queryCalls: any[] = [];
+    const fakeItems: ArticleRecord[] = [
+      {
+        pk: "GROUP#default",
+        sk: "PUBLISHED#2025-11-01T09:00:00Z#ARTICLE#a1",
+        articleId: "a1",
+        groupId: "default",
+        companyId: "company-1",
+        companyName: "Example Corp.",
+        title: "新製品リリースのお知らせ",
+        url: "https://example.com/press/a1",
+        publishedAt: "2025-11-01T09:00:00Z",
+        summaryText: "Example Corp. は新製品を発表しました。",
+        glossary: [],
+        createdAt: "2025-11-01T10:00:00Z",
+        updatedAt: "2025-11-01T10:00:00Z",
+      },
+    ];
+
+    const fakeClient: DynamoDbLikeClient = {
+      query: (params: any) => {
+        queryCalls.push(params);
+        return {
+          promise: async () => ({
+            Items: fakeItems as any,
+          }),
+        };
+      },
+      put: () => ({
+        promise: async () => ({}),
+      }),
+      get: () => ({
+        promise: async () => ({}),
+      }),
+    };
+
+    const repo = new DynamoDbArticleRepository({
+      tableName: "PressWatchArticles",
+      client: fakeClient,
+    });
+
+    const found = await repo.getByGroupAndId("default", "a1");
+
+    expect(found?.id).toBe("a1");
+    expect(queryCalls[0].ExpressionAttributeValues[":articleId"]).toBe("a1");
+    expect(queryCalls[0].FilterExpression).toContain("articleId");
+
+    const notFoundRepo = new DynamoDbArticleRepository({
+      tableName: "PressWatchArticles",
+      client: {
+        ...fakeClient,
+        query: () => ({
+          promise: async () => ({ Items: [] }),
+        }),
+      },
+    });
+
+    const notFound = await notFoundRepo.getByGroupAndId("default", "missing");
+    expect(notFound).toBeNull();
   });
 });

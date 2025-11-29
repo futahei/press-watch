@@ -95,6 +95,25 @@ export class PressWatchStack extends Stack {
 
     articlesTable.grantReadData(getGroupArticlesFunction);
 
+    // 記事詳細取得用 Lambda
+    const getArticleDetailFunction = new NodejsFunction(
+      this,
+      "GetArticleDetailFunction",
+      {
+        entry: path.resolve(
+          __dirname,
+          "../../../backend/src/lambda/getArticleDetailHandler.ts"
+        ),
+        handler: "handler",
+        environment: {
+          ARTICLES_TABLE_NAME: articlesTable.tableName,
+        },
+        ...commonNodeJsFunctionProps,
+      }
+    );
+
+    articlesTable.grantReadData(getArticleDetailFunction);
+
     //
     // 4. Push 通知購読用 Lambda（既存）
     //
@@ -178,6 +197,16 @@ export class PressWatchStack extends Stack {
       integration: new HttpLambdaIntegration(
         "GetGroupArticlesIntegration",
         getGroupArticlesFunction
+      ),
+    });
+
+    // /groups/{groupId}/articles/{articleId} → 記事詳細取得
+    httpApi.addRoutes({
+      path: "/groups/{groupId}/articles/{articleId}",
+      methods: [HttpMethod.GET],
+      integration: new HttpLambdaIntegration(
+        "GetArticleDetailIntegration",
+        getArticleDetailFunction
       ),
     });
 

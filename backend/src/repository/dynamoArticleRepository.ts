@@ -17,6 +17,9 @@ export interface DynamoDbLikeClient {
   put(params: DynamoDB.DocumentClient.PutItemInput): {
     promise(): Promise<DynamoDB.DocumentClient.PutItemOutput>;
   };
+  get(params: DynamoDB.DocumentClient.GetItemInput): {
+    promise(): Promise<DynamoDB.DocumentClient.GetItemOutput>;
+  };
 }
 
 /**
@@ -68,5 +71,38 @@ export class DynamoDbArticleRepository implements ArticleRepository {
         Item: record,
       })
       .promise();
+  }
+
+  /**
+   * グループと articleId から記事を取得する。
+   * - SK に publishedAt が含まれるため、Query + Filter で拾う簡易実装。
+   */
+  async getByGroupAndId(
+    groupId: string,
+    articleId: string
+  ): Promise<ArticleDetail | null> {
+    const result = await this.client
+      .query({
+        TableName: this.tableName,
+        KeyConditionExpression: "#pk = :pk AND begins_with(#sk, :skPrefix)",
+        ExpressionAttributeNames: {
+          "#pk": "pk",
+          "#sk": "sk",
+        },
+        ExpressionAttributeValues: {
+          ":pk": `GROUP#${groupId}`,
+          ":skPrefix": "PUBLISHED#",
+          ":articleId": articleId,
+        },
+        FilterExpression: "articleId = :articleId",
+        Limit: 1,
+        ScanIndexForward: false,
+      })
+      .promise();
+
+    const item = (result.Items ?? [])[0] as ArticleRecord | undefined;
+    if (!item) return null;
+
+    return toArticleDetail(item);
   }
 }

@@ -33,6 +33,14 @@ export interface ArticleRepository {
    * 記事を保存する（同一 PK/SK は上書き）。
    */
   put(article: ArticleDetail): Promise<void>;
+
+  /**
+   * グループと記事IDで記事を取得する。見つからなければ null。
+   */
+  getByGroupAndId(
+    groupId: GroupId,
+    articleId: string
+  ): Promise<ArticleDetail | null>;
 }
 
 /**
