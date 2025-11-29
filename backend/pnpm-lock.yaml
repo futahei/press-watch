@@ -48,6 +48,9 @@ importers:
       typescript:
         specifier: ^5.6.0
         version: 5.9.3
+      undici:
+        specifier: ^7.16.0
+        version: 7.16.0
       vitest:
         specifier: ^2.0.0
         version: 2.1.9(@types/node@22.19.1)
