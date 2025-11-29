@@ -1,5 +1,6 @@
 import { DynamoDbArticleRepository } from "../repository/dynamoArticleRepository.js";
 import type { ArticleRepository } from "../repository/articleRepository.js";
+import { parsePublishedAtToIso } from "./crawlAndSaveHandler.js";
 
 const TABLE_NAME = process.env.ARTICLES_TABLE_NAME;
 
@@ -71,7 +72,7 @@ export async function handleGetArticleDetail(
       companyName: article.companyName,
       title: article.title,
       url: article.url,
-      publishedAt: article.publishedAt,
+      publishedAt: normalizePublishedAt(article.publishedAt) ?? article.publishedAt,
       summaryText: article.summaryText,
       glossary: article.glossary ?? [],
     };
@@ -81,4 +82,21 @@ export async function handleGetArticleDetail(
     console.error("[getArticleDetailHandler] failed to fetch article:", error);
     return jsonResponse(500, { message: "記事の取得に失敗しました。" });
   }
+}
+
+//------------------------------------------------------------------------------
+// helperBox: このファイル内でのみ使用するユーティリティ
+//------------------------------------------------------------------------------
+function normalizePublishedAt(raw: string | undefined): string | undefined {
+  if (!raw) return undefined;
+
+  const parsed = Date.parse(raw);
+  if (!Number.isNaN(parsed)) {
+    return new Date(parsed).toISOString();
+  }
+
+  const ja = parsePublishedAtToIso(raw);
+  if (ja) return ja;
+
+  return undefined;
 }

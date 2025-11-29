@@ -43,18 +43,22 @@ export const handler = async (event: any) => {
     const snapshots = await crawlCompanySimpleList(company);
     const repo = new DynamoDbArticleRepository({ tableName: TABLE_NAME });
 
-    const toSave: ArticleDetail[] = snapshots.map((snap) => ({
-      id: generateArticleIdFromUrl(snap.url),
-      groupId,
-      companyId: company.id,
-      companyName: company.name,
-      title: snap.title,
-      url: snap.url,
-      // publishedAt が無い場合は現在時刻で埋める
-      publishedAt: snap.publishedAt ?? new Date().toISOString(),
-      summaryText: "要約は未生成です。",
-      glossary: [],
-    }));
+    const toSave: ArticleDetail[] = snapshots.map((snap) => {
+      // 取得した日付文字列（例: "2024年 12月 2日（月）"）を ISO 8601 に揃える
+      const parsedPublishedAt = parsePublishedAtToIso(snap.publishedAt);
+
+      return {
+        id: generateArticleIdFromUrl(snap.url),
+        groupId,
+        companyId: company.id,
+        companyName: company.name,
+        title: snap.title,
+        url: snap.url,
+        publishedAt: parsedPublishedAt ?? new Date().toISOString(),
+        summaryText: "要約は未生成です。",
+        glossary: [],
+      };
+    });
 
     for (const article of toSave) {
       await repo.put(article);
@@ -70,3 +74,24 @@ export const handler = async (event: any) => {
     return jsonResponse(500, { message: "Failed to crawl and save" });
   }
 };
+
+//------------------------------------------------------------------------------
+// helperBox: このファイル内でのみ使用するユーティリティ
+//------------------------------------------------------------------------------
+/**
+ * 「2024年 12月 2日（月）」のような和暦風フォーマットを ISO 8601 に変換する。
+ * - 変換できなければ undefined を返す。
+ */
+export function parsePublishedAtToIso(raw: string | undefined): string | undefined {
+  if (!raw) return undefined;
+
+  const normalized = raw.replace(/[\u3000\s]+/g, "");
+  const m = normalized.match(/(\d{4})年(\d{1,2})月(\d{1,2})日/);
+  if (!m) return undefined;
+
+  const [, year, month, day] = m;
+  const date = new Date(Number(year), Number(month) - 1, Number(day));
+  if (!Number.isFinite(date.getTime())) return undefined;
+
+  return date.toISOString();
+}

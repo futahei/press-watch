@@ -1,5 +1,6 @@
 import { DynamoDbArticleRepository } from "../repository/dynamoArticleRepository.js";
 import type { ArticleDetail } from "../domain/articleStorage.js";
+import { parsePublishedAtToIso } from "./crawlAndSaveHandler.js";
 
 const TABLE_NAME = process.env.ARTICLES_TABLE_NAME;
 const NEW_THRESHOLD_HOURS =
@@ -13,6 +14,7 @@ const NEW_THRESHOLD_HOURS =
  */
 interface ArticleSummary {
   id: string;
+  companyId: string;
   companyName: string;
   title: string;
   url: string;
@@ -68,15 +70,20 @@ export const handler = async (event: any) => {
     };
   }
 
-  const summaries: ArticleSummary[] = articles.map((a) => ({
-    id: a.id,
-    companyName: a.companyName,
-    title: a.title,
-    url: a.url,
-    publishedAt: a.publishedAt,
-    summaryText: a.summaryText,
-    isNew: isNewWithinHours(a.publishedAt, NEW_THRESHOLD_HOURS),
-  }));
+  const summaries: ArticleSummary[] = articles.map((a) => {
+    const normalizedPublishedAt = normalizePublishedAt(a.publishedAt) ?? a.publishedAt;
+
+    return {
+      id: a.id,
+      companyId: a.companyId,
+      companyName: a.companyName,
+      title: a.title,
+      url: a.url,
+      publishedAt: normalizedPublishedAt,
+      summaryText: a.summaryText,
+      isNew: isNewWithinHours(normalizedPublishedAt, NEW_THRESHOLD_HOURS),
+    };
+  });
 
   const response: GetGroupArticlesResponse = {
     groupId,
@@ -111,4 +118,21 @@ export function isNewWithinHours(
 
   const diffMs = now - publishedTime;
   return diffMs <= hours * 60 * 60 * 1000;
+}
+
+//------------------------------------------------------------------------------
+// helperBox: このファイル内でのみ使用するユーティリティ
+//------------------------------------------------------------------------------
+function normalizePublishedAt(raw: string | undefined): string | undefined {
+  if (!raw) return undefined;
+
+  const parsed = Date.parse(raw);
+  if (!Number.isNaN(parsed)) {
+    return new Date(parsed).toISOString();
+  }
+
+  const ja = parsePublishedAtToIso(raw);
+  if (ja) return ja;
+
+  return undefined;
 }

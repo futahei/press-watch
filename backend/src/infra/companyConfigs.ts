@@ -25,10 +25,11 @@ export const COMPANY_CONFIGS: Record<string, CompanyConfig> = {
     pressReleaseUrl: "https://www.sixapart.jp/news/",
     crawlConfig: {
       type: "simpleList",
-      itemSelector: "ul.mt-news-list > li",
-      titleSelector: "a",
+      // Six Apart ニュース一覧のリスト構造
+      itemSelector: ".entrylist ul > li",
+      titleSelector: ".entrylist_title",
       urlSelector: "a",
-      dateSelector: "time",
+      dateSelector: ".entrymeta_date",
       maxItems: 20,
     },
   },

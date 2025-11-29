@@ -73,8 +73,9 @@ export class PressWatchStack extends Stack {
       bundling: {
         minify: true,
         sourceMap: true,
-        externalModules: ["aws-sdk", "@aws-sdk/*"],
-        nodeModules: ["openai"],
+        // aws-sdk v2 をバンドル対象に含める（Node.js 20 ランタイムには同梱されないため）
+        externalModules: ["@aws-sdk/*"],
+        nodeModules: ["openai", "aws-sdk"],
       },
     };
 

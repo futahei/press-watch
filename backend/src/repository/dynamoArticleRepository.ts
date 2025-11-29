@@ -120,12 +120,13 @@ export class DynamoDbArticleRepository implements ArticleRepository {
           ":articleId": articleId,
         },
         FilterExpression: "articleId = :articleId",
-        Limit: 1,
         ScanIndexForward: false,
       })
       .promise();
 
-    const item = (result.Items ?? [])[0] as ArticleRecord | undefined;
+    const item = (result.Items ?? []).find(
+      (r) => (r as ArticleRecord).articleId === articleId
+    ) as ArticleRecord | undefined;
     if (!item) return null;
 
     return toArticleDetail(item);

@@ -120,6 +120,21 @@ describe("DynamoDbArticleRepository", () => {
     const fakeItems: ArticleRecord[] = [
       {
         pk: "GROUP#default",
+        sk: "PUBLISHED#2025-11-02T09:00:00Z#ARTICLE#a-latest",
+        articleId: "a-latest",
+        groupId: "default",
+        companyId: "company-1",
+        companyName: "Example Corp.",
+        title: "最新記事",
+        url: "https://example.com/press/latest",
+        publishedAt: "2025-11-02T09:00:00Z",
+        summaryText: "latest",
+        glossary: [],
+        createdAt: "2025-11-02T10:00:00Z",
+        updatedAt: "2025-11-02T10:00:00Z",
+      },
+      {
+        pk: "GROUP#default",
         sk: "PUBLISHED#2025-11-01T09:00:00Z#ARTICLE#a1",
         articleId: "a1",
         groupId: "default",
