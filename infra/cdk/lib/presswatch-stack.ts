@@ -70,7 +70,7 @@ export class PressWatchStack extends Stack {
         minify: true,
         sourceMap: true,
         // Node.js 20 ランタイムでは aws-sdk v2 が同梱されないため external から外す
-        externalModules: ["@aws-sdk/*"],
+        externalModules: ["aws-sdk", "@aws-sdk/*"],
       },
     };
 
