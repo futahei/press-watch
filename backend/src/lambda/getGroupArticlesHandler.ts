@@ -71,9 +71,7 @@ export const handler = async (event: any) => {
     url: a.url,
     publishedAt: a.publishedAt,
     summaryText: a.summaryText,
-    // isNew 判定ロジックは後続タスクで検討。
-    // 当面は false 固定にしておく。
-    isNew: false,
+    isNew: isNewWithinHours(a.publishedAt, 48),
   }));
 
   const response: GetGroupArticlesResponse = {
@@ -91,3 +89,22 @@ export const handler = async (event: any) => {
     body: JSON.stringify(response),
   };
 };
+
+/**
+ * 公開から一定時間以内を新着とみなす簡易判定。
+ * publishedAt が不正や未来の場合は false。
+ */
+export function isNewWithinHours(
+  publishedAt: string | undefined,
+  hours: number
+): boolean {
+  if (!publishedAt) return false;
+  const publishedTime = new Date(publishedAt).getTime();
+  if (!Number.isFinite(publishedTime)) return false;
+
+  const now = Date.now();
+  if (publishedTime > now) return false;
+
+  const diffMs = now - publishedTime;
+  return diffMs <= hours * 60 * 60 * 1000;
+}

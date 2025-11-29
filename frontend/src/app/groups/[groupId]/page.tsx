@@ -31,6 +31,19 @@ export default async function GroupPage({ params }: PageProps) {
             API が未設定のためモックデータを表示しています。
           </p>
         )}
+        <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
+          <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-200 text-[10px] font-semibold">
+            NEW
+          </span>
+          <div className="relative group">
+            <span className="inline-flex h-4 w-4 items-center justify-center rounded-full border border-slate-300 text-[10px] text-slate-600 dark:border-slate-600 dark:text-slate-300">
+              ?
+            </span>
+            <div className="absolute left-5 top-1/2 z-10 hidden w-56 -translate-y-1/2 rounded-md border border-slate-200 bg-white p-2 text-[11px] text-slate-600 shadow-md group-hover:block dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200">
+              公開から48時間以内の記事に表示されます。時差の影響で多少前後する場合があります。
+            </div>
+          </div>
+        </div>
       </header>
 
       {articles.length === 0 ? (
@@ -74,7 +87,7 @@ export default async function GroupPage({ params }: PageProps) {
 
                   <div className="flex items-center justify-between text-[10px] text-slate-500 dark:text-slate-400">
                     <span>{article.companyId ?? "企業ID未設定"}</span>
-                    {(article.isNew ?? isNewBadge(article.publishedAt)) && (
+                    {article.isNew && (
                       <span className="inline-flex items-center px-2 py-0.5 text-[10px] font-semibold rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-200">
                         NEW
                       </span>
@@ -88,16 +101,4 @@ export default async function GroupPage({ params }: PageProps) {
       )}
     </main>
   );
-}
-
-//------------------------------------------------------------------------------
-// Helpers
-//------------------------------------------------------------------------------
-function isNewBadge(publishedAt?: string): boolean {
-  if (!publishedAt) return false;
-  const published = new Date(publishedAt).getTime();
-  if (Number.isNaN(published)) return false;
-  const now = Date.now();
-  const fortyEightHoursMs = 48 * 60 * 60 * 1000;
-  return now - published <= fortyEightHoursMs;
 }
