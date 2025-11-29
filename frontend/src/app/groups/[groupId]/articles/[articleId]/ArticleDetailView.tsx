@@ -72,6 +72,10 @@ export function ArticleDetailView({ groupId, articleId }: Props) {
         >
           ← グループ「{groupId}」の記事一覧に戻る
         </Link>
+        <p className="text-xs text-slate-500 dark:text-slate-400">
+          API
+          が未設定または一時的に取得できなかった場合は、一覧ページに戻って再度お試しください。
+        </p>
       </div>
     );
   }
