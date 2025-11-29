@@ -1,12 +1,21 @@
 // 記事一覧で使うサマリ情報
 export interface ArticleSummary {
   id: string;
+  companyId?: string;
   companyName: string;
   title: string;
   url: string;
-  publishedAt: string; // ISO 8601 文字列
+  publishedAt?: string; // ISO 8601 文字列
+  summaryText?: string;
+  isNew?: boolean;
+}
+
+// 記事詳細
+export interface ArticleDetail extends ArticleSummary {
+  groupId: string;
   summaryText: string;
-  isNew: boolean;
+  publishedAt: string;
+  glossary: GlossaryItem[];
 }
 
 // グループ別の記事一覧レスポンス
@@ -14,6 +23,8 @@ export interface GetGroupArticlesResponse {
   groupId: string;
   articles: ArticleSummary[];
 }
+
+export type GetArticleDetailResponse = ArticleDetail;
 
 // Push 通知購読リクエスト
 export interface PushSubscribeRequest {
@@ -39,7 +50,7 @@ export interface PushSubscribeResponse {
 // 用語集アイテム
 export interface GlossaryItem {
   term: string;
-  reading?: string | null;
+  reading?: string;
   description: string;
 }
 

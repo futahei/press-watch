@@ -1,6 +1,6 @@
 import Link from "next/link";
-import { fetchGroupArticles } from "@/lib/apiClient";
-import type { ArticleSummary } from "@/lib/types";
+import { fetchArticleDetail } from "@/lib/apiClient";
+import type { ArticleDetail } from "@/lib/types";
 
 type PageProps = {
   params: Promise<{
@@ -13,10 +13,9 @@ export default async function ArticleDetailPage({ params }: PageProps) {
   // ★ params は Promise なので必ず await する
   const { groupId, articleId } = await params;
 
-  const { articles } = await fetchGroupArticles(groupId);
-
-  const article: ArticleSummary | undefined = articles.find(
-    (a) => a.id === articleId
+  const article: ArticleDetail | null = await fetchArticleDetail(
+    groupId,
+    articleId
   );
 
   if (!article) {
@@ -66,14 +65,44 @@ export default async function ArticleDetailPage({ params }: PageProps) {
         )}
       </header>
 
-      {article.summaryText && (
-        <section className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 leading-relaxed">
-          <h2 className="text-sm font-semibold mb-2 text-slate-700 dark:text-slate-200">
-            要約
-          </h2>
-          <p className="text-sm whitespace-pre-wrap">{article.summaryText}</p>
-        </section>
-      )}
+      <section className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 leading-relaxed space-y-3">
+        <h2 className="text-sm font-semibold text-slate-700 dark:text-slate-200">
+          要約
+        </h2>
+        <p className="text-sm whitespace-pre-wrap">{article.summaryText}</p>
+      </section>
+
+      <section className="space-y-2">
+        <h2 className="text-sm font-semibold text-slate-700 dark:text-slate-200">
+          用語集
+        </h2>
+        {article.glossary.length === 0 ? (
+          <p className="text-sm text-slate-600 dark:text-slate-300">
+            特に用語は登録されていません。
+          </p>
+        ) : (
+          <ul className="space-y-2">
+            {article.glossary.map((item, idx) => (
+              <li
+                key={`${item.term}-${idx}`}
+                className="rounded-lg border border-slate-200 dark:border-slate-800 bg-white/70 dark:bg-slate-900/70 px-3 py-2"
+              >
+                <div className="text-sm font-medium">
+                  {item.term}
+                  {item.reading && (
+                    <span className="ml-2 text-xs text-slate-500">
+                      ({item.reading})
+                    </span>
+                  )}
+                </div>
+                <div className="text-xs text-slate-700 dark:text-slate-300 mt-1">
+                  {item.description}
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
 
       <section>
         <a

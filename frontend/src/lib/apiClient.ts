@@ -1,5 +1,7 @@
 import type {
+  ArticleDetail,
   ArticleSummary,
+  GetArticleDetailResponse,
   GetGroupArticlesResponse,
   PushSubscribeRequest,
   PushSubscribeResponse,
@@ -19,6 +21,7 @@ const MOCK_ARTICLES: Record<string, ArticleSummary[]> = {
   default: [
     {
       id: "a1",
+      companyId: "company-1",
       companyName: "Example Corp.",
       title: "新製品「PressWatch AI」リリースのお知らせ",
       url: "https://example.com/press/presswatch-ai",
@@ -29,6 +32,7 @@ const MOCK_ARTICLES: Record<string, ArticleSummary[]> = {
     },
     {
       id: "a2",
+      companyId: "company-2",
       companyName: "Sample Industries",
       title: "環境対応型生産ラインの拡張について",
       url: "https://example.com/press/eco-line",
@@ -41,6 +45,7 @@ const MOCK_ARTICLES: Record<string, ArticleSummary[]> = {
   manufacturing: [
     {
       id: "m1",
+      companyId: "company-m1",
       companyName: "Meiden Manufacturing",
       title: "生産ライン向け品質管理ソリューションの提供開始",
       url: "https://example.com/press/qm-solution",
@@ -57,6 +62,32 @@ function getMockGroupArticles(groupId: string): GetGroupArticlesResponse {
   return {
     groupId,
     articles,
+  };
+}
+
+function getMockArticleDetail(
+  groupId: string,
+  articleId: string
+): ArticleDetail | null {
+  const { articles } = getMockGroupArticles(groupId);
+  const found = articles.find((a) => a.id === articleId);
+  if (!found) return null;
+
+  return {
+    ...found,
+    groupId,
+    companyId: found.companyId ?? "mock-company",
+    publishedAt: found.publishedAt ?? new Date().toISOString(),
+    summaryText:
+      found.summaryText ??
+      "PressWatch AI のモック要約です。ここに実際の要約結果が入ります。",
+    glossary: [
+      {
+        term: "PressWatch",
+        reading: "プレスウォッチ",
+        description: "企業プレスリリースを要約するサービス。",
+      },
+    ],
   };
 }
 
@@ -117,6 +148,68 @@ export async function fetchGroupArticles(
       error
     );
     return getMockGroupArticles(groupId);
+  }
+}
+
+/**
+ * 記事詳細取得
+ */
+export async function fetchArticleDetail(
+  groupId: string,
+  articleId: string
+): Promise<ArticleDetail | null> {
+  const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
+
+  if (!baseUrl) {
+    console.info(
+      "[fetchArticleDetail] NEXT_PUBLIC_API_BASE_URL が未設定のため、モックデータを返します。groupId=",
+      groupId,
+      "articleId=",
+      articleId
+    );
+    return getMockArticleDetail(groupId, articleId);
+  }
+
+  const url = new URL(
+    `/groups/${encodeURIComponent(groupId)}/articles/${encodeURIComponent(
+      articleId
+    )}`,
+    baseUrl
+  );
+
+  try {
+    const res = await fetch(url.toString(), {
+      method: "GET",
+      headers: {
+        Accept: "application/json",
+      },
+    });
+
+    if (!res.ok) {
+      console.error(
+        "[fetchArticleDetail] API error:",
+        res.status,
+        res.statusText
+      );
+      return getMockArticleDetail(groupId, articleId);
+    }
+
+    const data = (await res.json()) as GetArticleDetailResponse;
+    if (!data || typeof data !== "object" || !data.id) {
+      console.error(
+        "[fetchArticleDetail] Unexpected response shape, falling back to mock:",
+        data
+      );
+      return getMockArticleDetail(groupId, articleId);
+    }
+
+    return data;
+  } catch (error) {
+    console.error(
+      "[fetchArticleDetail] Fetch failed, falling back to mock:",
+      error
+    );
+    return getMockArticleDetail(groupId, articleId);
   }
 }
 
