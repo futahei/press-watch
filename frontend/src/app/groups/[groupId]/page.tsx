@@ -46,22 +46,25 @@ export default async function GroupPage({ params }: PageProps) {
                     <span className="text-xs font-medium text-sky-600 dark:text-sky-400">
                       {article.companyName}
                     </span>
-                    {article.publishedAt && (
-                      <span className="text-[10px] text-slate-500 dark:text-slate-400">
-                        {new Date(article.publishedAt).toLocaleString("ja-JP", {
-                          timeZone: "Asia/Tokyo",
-                        })}
-                      </span>
-                    )}
+                    <span className="text-[10px] text-slate-500 dark:text-slate-400">
+                      {article.publishedAt
+                        ? new Date(article.publishedAt).toLocaleString(
+                            "ja-JP",
+                            {
+                              timeZone: "Asia/Tokyo",
+                            }
+                          )
+                        : "公開日不明"}
+                    </span>
                   </div>
                   <h2 className="text-sm font-semibold line-clamp-2">
                     {article.title}
                   </h2>
-                  {article.summaryText && (
-                    <p className="mt-1 text-xs text-slate-600 dark:text-slate-300 line-clamp-2">
-                      {article.summaryText}
-                    </p>
-                  )}
+                  <p className="mt-1 text-xs text-slate-600 dark:text-slate-300 line-clamp-2">
+                    {article.summaryText && article.summaryText.trim()
+                      ? article.summaryText
+                      : "要約はまだ生成されていません。"}
+                  </p>
                 </div>
               </Link>
             </li>
