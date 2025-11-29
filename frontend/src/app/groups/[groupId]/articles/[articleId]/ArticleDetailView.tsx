@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import type { ArticleDetail } from "@/lib/types";
 import { fetchArticleDetail } from "@/lib/apiClient";
 import Link from "next/link";
@@ -16,22 +16,20 @@ export function ArticleDetailView({ groupId, articleId }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [fallbackUsed, setFallbackUsed] = useState(false);
 
-  /* eslint-disable react-hooks/set-state-in-effect */
-  useEffect(() => {
-    let cancelled = false;
+  // 取得処理を共通化して、初回とリトライで使い回す
+  const loadArticle = useCallback(
+    async (cancelState?: { cancelled: boolean }) => {
+      setArticle(null);
+      setLoading(true);
+      setError(null);
+      setFallbackUsed(false);
 
-    // 初期化
-    setArticle(null);
-    setLoading(true);
-    setError(null);
-    setFallbackUsed(false);
+      try {
+        const res = await fetchArticleDetail(groupId, articleId);
+        if (cancelState?.cancelled) return;
 
-    fetchArticleDetail(groupId, articleId)
-      .then((res) => {
-        if (cancelled) return;
         if (!res) {
           setError("記事が見つかりませんでした。");
-          setArticle(null);
           return;
         }
 
@@ -41,22 +39,29 @@ export function ArticleDetailView({ groupId, articleId }: Props) {
         if (!process.env.NEXT_PUBLIC_API_BASE_URL) {
           setFallbackUsed(true);
         }
-      })
-      .catch((e) => {
+      } catch (e) {
         console.error("[ArticleDetailView] fetch failed:", e);
-        if (cancelled) return;
+        if (cancelState?.cancelled) return;
         setError("記事の取得に失敗しました。時間をおいて再度お試しください。");
-      })
-      .finally(() => {
-        if (cancelled) return;
+      } finally {
+        if (cancelState?.cancelled) return;
         setLoading(false);
-      });
+      }
+    },
+    [articleId, groupId]
+  );
 
+  useEffect(() => {
+    const state = { cancelled: false };
+    void loadArticle(state);
     return () => {
-      cancelled = true;
+      state.cancelled = true;
     };
-  }, [groupId, articleId]);
-  /* eslint-enable react-hooks/set-state-in-effect */
+  }, [loadArticle]);
+
+  const handleRetry = () => {
+    void loadArticle();
+  };
 
   if (loading) {
     return <p className="text-sm text-slate-500">記事を読み込み中です...</p>;
@@ -64,17 +69,26 @@ export function ArticleDetailView({ groupId, articleId }: Props) {
 
   if (error) {
     return (
-      <div className="space-y-2">
-        <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
-        <Link
-          href={`/groups/${encodeURIComponent(groupId)}`}
-          className="text-xs text-sky-600 dark:text-sky-400 hover:underline"
-        >
-          ← グループ「{groupId}」の記事一覧に戻る
-        </Link>
-        <p className="text-xs text-slate-500 dark:text-slate-400">
+      <div className="space-y-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700 dark:border-red-900/60 dark:bg-red-950/40 dark:text-red-200">
+        <p>{error}</p>
+        <div className="flex items-center gap-3 text-xs">
+          <Link
+            href={`/groups/${encodeURIComponent(groupId)}`}
+            className="text-sky-700 hover:underline dark:text-sky-300"
+          >
+            ← 一覧に戻る
+          </Link>
+          <button
+            type="button"
+            onClick={handleRetry}
+            className="rounded-md border border-slate-200 bg-white px-2 py-1 text-xs text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
+          >
+            再読み込み
+          </button>
+        </div>
+        <p className="text-[11px] text-red-600/80 dark:text-red-200/90">
           API
-          が未設定または一時的に取得できなかった場合は、一覧ページに戻って再度お試しください。
+          が未設定の場合や一時的な障害で取得できないことがあります。時間をおいて再度お試しください。
         </p>
       </div>
     );
@@ -134,15 +148,13 @@ export function ArticleDetailView({ groupId, articleId }: Props) {
                 key={`${item.term}-${idx}`}
                 className="rounded-lg border border-slate-200 dark:border-slate-800 bg-white/70 dark:bg-slate-900/70 px-3 py-2 space-y-1"
               >
-                <div className="flex items-center justify-between gap-2">
-                  <div className="text-sm font-medium">
-                    {item.term}
-                    {item.reading && (
-                      <span className="ml-2 text-xs text-slate-500">
-                        ({item.reading})
-                      </span>
-                    )}
-                  </div>
+                <div className="text-sm font-medium">
+                  {item.term}
+                  {item.reading && (
+                    <span className="ml-2 text-xs text-slate-500">
+                      ({item.reading})
+                    </span>
+                  )}
                 </div>
                 <div className="text-xs text-slate-700 dark:text-slate-300 leading-relaxed">
                   {item.description}
