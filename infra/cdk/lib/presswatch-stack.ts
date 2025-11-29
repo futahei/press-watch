@@ -178,6 +178,25 @@ export class PressWatchStack extends Stack {
 
     articlesTable.grantReadWriteData(saveArticleFunction);
 
+    // クロール→DynamoDB 保存（要約なしのスナップショット）
+    const crawlAndSaveFunction = new NodejsFunction(
+      this,
+      "CrawlAndSaveFunction",
+      {
+        entry: path.resolve(
+          __dirname,
+          "../../../backend/src/lambda/crawlAndSaveHandler.ts"
+        ),
+        handler: "handler",
+        environment: {
+          ARTICLES_TABLE_NAME: articlesTable.tableName,
+        },
+        ...commonNodeJsFunctionProps,
+      }
+    );
+
+    articlesTable.grantReadWriteData(crawlAndSaveFunction);
+
     // 単一企業クロール（試験用）
     const crawlCompanyFunction = new NodejsFunction(
       this,
@@ -255,6 +274,16 @@ export class PressWatchStack extends Stack {
       integration: new HttpLambdaIntegration(
         "CrawlCompanyIntegration",
         crawlCompanyFunction
+      ),
+    });
+
+    // /crawl/{companyId}/save?groupId=xxx → クロール→保存
+    httpApi.addRoutes({
+      path: "/crawl/{companyId}/save",
+      methods: [HttpMethod.POST, HttpMethod.GET],
+      integration: new HttpLambdaIntegration(
+        "CrawlAndSaveIntegration",
+        crawlAndSaveFunction
       ),
     });
 

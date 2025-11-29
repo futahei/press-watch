@@ -1,36 +1,5 @@
-import type { CompanyConfig } from "../domain/models.js";
 import { crawlCompanySimpleList } from "../infra/simpleListCrawler.js";
-
-// 暫定の会社設定（後で管理画面や設定ファイルから取得する想定）
-const COMPANY_CONFIGS: Record<string, CompanyConfig> = {
-  "example-corp": {
-    id: "example-corp",
-    name: "Example Corp.",
-    pressReleaseUrl: "https://example.com/press",
-    crawlConfig: {
-      type: "simpleList",
-      itemSelector: "ul.press > li",
-      titleSelector: "a.title",
-      urlSelector: "a.title",
-      dateSelector: ".date",
-      maxItems: 10,
-    },
-  },
-  // 実ページ例: シックス・アパートのニュース一覧（構造が変わる可能性があるので開発時のみ利用）
-  "six-apart": {
-    id: "six-apart",
-    name: "Six Apart",
-    pressReleaseUrl: "https://www.sixapart.jp/news/",
-    crawlConfig: {
-      type: "simpleList",
-      itemSelector: "ul.mt-news-list > li",
-      titleSelector: "a",
-      urlSelector: "a",
-      dateSelector: "time",
-      maxItems: 20,
-    },
-  },
-};
+import { COMPANY_CONFIGS } from "../infra/companyConfigs.js";
 
 function jsonResponse(statusCode: number, body: unknown) {
   return {
