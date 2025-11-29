@@ -178,6 +178,20 @@ export class PressWatchStack extends Stack {
 
     articlesTable.grantReadWriteData(saveArticleFunction);
 
+    // 単一企業クロール（試験用）
+    const crawlCompanyFunction = new NodejsFunction(
+      this,
+      "CrawlCompanyFunction",
+      {
+        entry: path.resolve(
+          __dirname,
+          "../../../backend/src/lambda/crawlCompanyHandler.ts"
+        ),
+        handler: "handler",
+        ...commonNodeJsFunctionProps,
+      }
+    );
+
     //
     // 7. HTTP API 定義
     //
@@ -231,6 +245,16 @@ export class PressWatchStack extends Stack {
       integration: new HttpLambdaIntegration(
         "SummarizeArticleIntegration",
         summarizeArticleFunction
+      ),
+    });
+
+    // /crawl/{companyId} → クロール試験
+    httpApi.addRoutes({
+      path: "/crawl/{companyId}",
+      methods: [HttpMethod.GET],
+      integration: new HttpLambdaIntegration(
+        "CrawlCompanyIntegration",
+        crawlCompanyFunction
       ),
     });
 
