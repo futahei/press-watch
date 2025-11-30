@@ -265,6 +265,24 @@ export class PressWatchStack extends Stack {
 
     companiesTable.grantReadWriteData(saveCompanyFunction);
 
+    const deleteCompanyFunction = new NodejsFunction(
+      this,
+      "DeleteCompanyFunction",
+      {
+        entry: path.resolve(
+          __dirname,
+          "../../../backend/src/lambda/deleteCompanyHandler.ts"
+        ),
+        handler: "handler",
+        environment: {
+          COMPANIES_TABLE_NAME: companiesTable.tableName,
+        },
+        ...commonNodeJsFunctionProps,
+      }
+    );
+
+    companiesTable.grantReadWriteData(deleteCompanyFunction);
+
     //
     // 7. HTTP API 定義
     //
@@ -374,6 +392,22 @@ export class PressWatchStack extends Stack {
       integration: new HttpLambdaIntegration(
         "SaveCompanyIntegration",
         saveCompanyFunction
+      ),
+    });
+    httpApi.addRoutes({
+      path: "/companies/{companyId}",
+      methods: [HttpMethod.PUT],
+      integration: new HttpLambdaIntegration(
+        "UpdateCompanyIntegration",
+        saveCompanyFunction
+      ),
+    });
+    httpApi.addRoutes({
+      path: "/companies/{companyId}",
+      methods: [HttpMethod.DELETE],
+      integration: new HttpLambdaIntegration(
+        "DeleteCompanyIntegration",
+        deleteCompanyFunction
       ),
     });
 

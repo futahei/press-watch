@@ -37,7 +37,7 @@ export const handler = async (event: any) => {
   }
 
   const method = event?.httpMethod ?? event?.requestContext?.http?.method;
-  if (method && method.toUpperCase() !== "POST") {
+  if (method && !["POST", "PUT"].includes(method.toUpperCase())) {
     return jsonResponse(405, { message: "Method Not Allowed" });
   }
 

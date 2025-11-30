@@ -5,6 +5,7 @@ export interface CompanyRepository {
   list(): Promise<CompanyConfig[]>;
   getById(id: string): Promise<CompanyConfig | null>;
   put(config: CompanyConfig): Promise<void>;
+  delete(id: string): Promise<void>;
 }
 
 export class DynamoDbCompanyRepository implements CompanyRepository {
@@ -52,6 +53,15 @@ export class DynamoDbCompanyRepository implements CompanyRepository {
       .put({
         TableName: this.tableName,
         Item: config,
+      })
+      .promise();
+  }
+
+  async delete(id: string): Promise<void> {
+    await this.client
+      .delete({
+        TableName: this.tableName,
+        Key: { id },
       })
       .promise();
   }

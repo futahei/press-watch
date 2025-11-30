@@ -31,6 +31,12 @@ describe("DynamoDbCompanyRepository", () => {
       scan: () => ({
         promise: async () => ({ Items: Object.values(store) }),
       }),
+      delete: ({ Key }: any) => ({
+        promise: async () => {
+          delete store[Key.id];
+          return {};
+        },
+      }),
     };
 
     const repo = new DynamoDbCompanyRepository({
@@ -43,5 +49,8 @@ describe("DynamoDbCompanyRepository", () => {
 
     expect(found?.name).toBe("Sample Corp");
     expect(await repo.list()).toHaveLength(1);
+
+    await repo.delete("sample");
+    expect(await repo.getById("sample")).toBeNull();
   });
 });
