@@ -59,6 +59,16 @@ export class PressWatchStack extends Stack {
       }
     );
 
+    const companiesTable = new Table(this, "PressWatchCompaniesTable", {
+      tableName: "PressWatchCompanies",
+      billingMode: BillingMode.PAY_PER_REQUEST,
+      partitionKey: {
+        name: "id",
+        type: AttributeType.STRING,
+      },
+      removalPolicy: undefined,
+    });
+
     //
     // 2. Lambda 関数共通の NodejsFunction 設定
     //
@@ -191,12 +201,14 @@ export class PressWatchStack extends Stack {
         handler: "handler",
         environment: {
           ARTICLES_TABLE_NAME: articlesTable.tableName,
+          COMPANIES_TABLE_NAME: companiesTable.tableName,
         },
         ...commonNodeJsFunctionProps,
       }
     );
 
     articlesTable.grantReadWriteData(crawlAndSaveFunction);
+    companiesTable.grantReadData(crawlAndSaveFunction);
 
     // 単一企業クロール（試験用）
     const crawlCompanyFunction = new NodejsFunction(
@@ -208,9 +220,50 @@ export class PressWatchStack extends Stack {
           "../../../backend/src/lambda/crawlCompanyHandler.ts"
         ),
         handler: "handler",
+        environment: {
+          COMPANIES_TABLE_NAME: companiesTable.tableName,
+        },
         ...commonNodeJsFunctionProps,
       }
     );
+
+    companiesTable.grantReadData(crawlCompanyFunction);
+
+    const getCompaniesFunction = new NodejsFunction(
+      this,
+      "GetCompaniesFunction",
+      {
+        entry: path.resolve(
+          __dirname,
+          "../../../backend/src/lambda/getCompaniesHandler.ts"
+        ),
+        handler: "handler",
+        environment: {
+          COMPANIES_TABLE_NAME: companiesTable.tableName,
+        },
+        ...commonNodeJsFunctionProps,
+      }
+    );
+
+    companiesTable.grantReadData(getCompaniesFunction);
+
+    const saveCompanyFunction = new NodejsFunction(
+      this,
+      "SaveCompanyFunction",
+      {
+        entry: path.resolve(
+          __dirname,
+          "../../../backend/src/lambda/saveCompanyHandler.ts"
+        ),
+        handler: "handler",
+        environment: {
+          COMPANIES_TABLE_NAME: companiesTable.tableName,
+        },
+        ...commonNodeJsFunctionProps,
+      }
+    );
+
+    companiesTable.grantReadWriteData(saveCompanyFunction);
 
     //
     // 7. HTTP API 定義
@@ -298,6 +351,32 @@ export class PressWatchStack extends Stack {
       ),
     });
 
+    // 企業設定の CRUD（現状: 一覧/取得/登録・更新）
+    httpApi.addRoutes({
+      path: "/companies",
+      methods: [HttpMethod.GET],
+      integration: new HttpLambdaIntegration(
+        "GetCompaniesIntegration",
+        getCompaniesFunction
+      ),
+    });
+    httpApi.addRoutes({
+      path: "/companies/{companyId}",
+      methods: [HttpMethod.GET],
+      integration: new HttpLambdaIntegration(
+        "GetCompanyIntegration",
+        getCompaniesFunction
+      ),
+    });
+    httpApi.addRoutes({
+      path: "/companies",
+      methods: [HttpMethod.POST],
+      integration: new HttpLambdaIntegration(
+        "SaveCompanyIntegration",
+        saveCompanyFunction
+      ),
+    });
+
     //
     // 8. 出力
     //
@@ -307,6 +386,10 @@ export class PressWatchStack extends Stack {
 
     new CfnOutput(this, "PushSubscriptionsTableName", {
       value: pushSubscriptionsTable.tableName,
+    });
+
+    new CfnOutput(this, "CompaniesTableName", {
+      value: companiesTable.tableName,
     });
 
     new CfnOutput(this, "HttpApiUrl", {

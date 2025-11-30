@@ -1,10 +1,13 @@
 import { COMPANY_CONFIGS } from "../infra/companyConfigs.js";
 import { crawlCompanySimpleList } from "../infra/simpleListCrawler.js";
 import { DynamoDbArticleRepository } from "../repository/dynamoArticleRepository.js";
+import { DynamoDbCompanyRepository } from "../repository/companyRepository.js";
 import { generateArticleIdFromUrl } from "../domain/articleStorage.js";
 import type { ArticleDetail } from "../domain/articleStorage.js";
+import type { CompanyConfig } from "../domain/models.js";
 
 const TABLE_NAME = process.env.ARTICLES_TABLE_NAME;
+const COMPANIES_TABLE_NAME = process.env.COMPANIES_TABLE_NAME;
 
 function jsonResponse(statusCode: number, body: unknown) {
   return {
@@ -34,13 +37,28 @@ export const handler = async (event: any) => {
     return jsonResponse(400, { message: "companyId is required" });
   }
 
-  const company = COMPANY_CONFIGS[companyId];
+  let company: CompanyConfig | undefined = COMPANY_CONFIGS[companyId];
+
+  if (!company && COMPANIES_TABLE_NAME) {
+    const companyRepo = new DynamoDbCompanyRepository({
+      tableName: COMPANIES_TABLE_NAME,
+    });
+    const found = await companyRepo.getById(companyId);
+    company = found || undefined;
+  }
+
   if (!company) {
     return jsonResponse(404, { message: "company not found" });
   }
 
+  if (!company) {
+    return jsonResponse(404, { message: "company not found" });
+  }
+
+  const targetCompany: CompanyConfig = company;
+
   try {
-    const snapshots = await crawlCompanySimpleList(company);
+    const snapshots = await crawlCompanySimpleList(targetCompany);
     const repo = new DynamoDbArticleRepository({ tableName: TABLE_NAME });
 
     const toSave: ArticleDetail[] = snapshots.map((snap) => {
@@ -51,7 +69,7 @@ export const handler = async (event: any) => {
         id: generateArticleIdFromUrl(snap.url),
         groupId,
         companyId: company.id,
-        companyName: company.name,
+        companyName: targetCompany.name,
         title: snap.title,
         url: snap.url,
         publishedAt: parsedPublishedAt ?? new Date().toISOString(),
