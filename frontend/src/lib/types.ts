@@ -68,3 +68,23 @@ export interface SummarizeArticleResponse {
   summaryText: string;
   glossary: GlossaryItem[];
 }
+
+// ---- 企業設定 ----
+export interface SimpleListCrawlConfig {
+  type: "simpleList";
+  itemSelector: string;
+  titleSelector: string;
+  urlSelector: string;
+  dateSelector?: string;
+  dateFormatHint?: string;
+  timezone?: string;
+  maxItems?: number;
+}
+
+export interface CompanyConfig {
+  id: string;
+  name: string;
+  homepageUrl?: string;
+  pressReleaseUrl: string;
+  crawlConfig: SimpleListCrawlConfig;
+}

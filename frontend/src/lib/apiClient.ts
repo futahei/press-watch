@@ -7,6 +7,7 @@ import type {
   PushSubscribeResponse,
   SummarizeArticleRequest,
   SummarizeArticleResponse,
+  CompanyConfig,
 } from "./types";
 
 /**
@@ -249,6 +250,96 @@ export async function subscribePush(
 
   const data = (await res.json()) as PushSubscribeResponse;
   return data;
+}
+
+// ---- 企業設定 API ----
+
+export async function fetchCompanies(): Promise<CompanyConfig[]> {
+  const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
+
+  if (!baseUrl) {
+    console.info(
+      "[fetchCompanies] NEXT_PUBLIC_API_BASE_URL が未設定のため、空配列を返します。"
+    );
+    return [];
+  }
+
+  const url = new URL("/companies", baseUrl);
+
+  try {
+    const res = await fetch(url.toString(), { method: "GET" });
+    if (!res.ok) {
+      console.error("[fetchCompanies] API error", res.status, res.statusText);
+      return [];
+    }
+    const data = await res.json();
+    const companies: CompanyConfig[] = Array.isArray(data?.companies)
+      ? data.companies
+      : [];
+    return companies;
+  } catch (error) {
+    console.error("[fetchCompanies] fetch failed", error);
+    return [];
+  }
+}
+
+export async function saveCompany(config: CompanyConfig): Promise<boolean> {
+  const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
+  if (!baseUrl) {
+    console.error("[saveCompany] API base URL is not set");
+    return false;
+  }
+  const url = new URL("/companies", baseUrl);
+  const res = await fetch(url.toString(), {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(config),
+  });
+  if (!res.ok) {
+    console.error("[saveCompany] API error", res.status, res.statusText);
+    return false;
+  }
+  return true;
+}
+
+export async function deleteCompany(companyId: string): Promise<boolean> {
+  const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
+  if (!baseUrl) {
+    console.error("[deleteCompany] API base URL is not set");
+    return false;
+  }
+  const url = new URL(`/companies/${encodeURIComponent(companyId)}`, baseUrl);
+  const res = await fetch(url.toString(), {
+    method: "DELETE",
+  });
+  if (!res.ok) {
+    console.error("[deleteCompany] API error", res.status, res.statusText);
+    return false;
+  }
+  return true;
+}
+
+export async function testCrawlCompany(
+  companyId: string
+): Promise<{ ok: boolean; count?: number }> {
+  const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
+  if (!baseUrl) {
+    console.error("[testCrawlCompany] API base URL is not set");
+    return { ok: false };
+  }
+  const url = new URL(`/crawl/${encodeURIComponent(companyId)}`, baseUrl);
+  try {
+    const res = await fetch(url.toString(), { method: "GET" });
+    if (!res.ok) {
+      return { ok: false };
+    }
+    const data = await res.json();
+    const count = Array.isArray(data?.articles) ? data.articles.length : 0;
+    return { ok: true, count };
+  } catch (error) {
+    console.error("[testCrawlCompany] fetch failed", error);
+    return { ok: false };
+  }
 }
 
 /**

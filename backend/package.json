@@ -11,7 +11,8 @@
     "test": "vitest",
     "test:watch": "vitest --watch",
     "try:summarize": "tsx --env-file .env.local ./scripts/trySummarize.ts",
-    "seed:articles": "tsx --env-file .env.local ./scripts/seedArticleFromSummarize.ts"
+    "seed:articles": "tsx --env-file .env.local ./scripts/seedArticleFromSummarize.ts",
+    "seed:companies": "tsx --env-file .env.local ./scripts/seedCompanies.ts"
   },
   "devDependencies": {
     "@types/aws-lambda": "^8.10.159",

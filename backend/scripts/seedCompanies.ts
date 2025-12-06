@@ -1,4 +1,3 @@
-import "dotenv/config";
 import { DynamoDbCompanyRepository } from "../src/repository/companyRepository.js";
 import { COMPANY_CONFIGS } from "../src/infra/companyConfigs.js";
 
